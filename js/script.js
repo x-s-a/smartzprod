@@ -25,11 +25,67 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function initializeApp() {
-  // Auto-fill timestamp
+  // Auto-fill timestamp with real-time local timezone
   const waktuInput = document.getElementById('waktu');
-  if (waktuInput && !waktuInput.value) {
+
+  // Function to get current local datetime in HTML datetime-local format
+  function getCurrentLocalDateTime() {
     const now = new Date();
-    waktuInput.value = now.toISOString().slice(0, 16);
+    // Get local datetime in YYYY-MM-DDTHH:MM format
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  }
+
+  // Set initial value
+  if (waktuInput) {
+    waktuInput.value = getCurrentLocalDateTime();
+
+    // Update every minute (60000ms) if user hasn't manually changed it
+    let userModified = false;
+
+    // Track if user manually changes the time
+    waktuInput.addEventListener('input', () => {
+      userModified = true;
+    });
+
+    // Update time every minute if not manually modified
+    setInterval(() => {
+      if (!userModified && document.activeElement !== waktuInput) {
+        waktuInput.value = getCurrentLocalDateTime();
+      }
+    }, 60000); // Update every 1 minute
+
+    // Reset userModified flag when form is submitted or reset
+    const productivityForm = waktuInput.closest('form') || document.querySelector('#calculateProductivityBtn')?.closest('.bg-white');
+    if (productivityForm) {
+      // Reset flag when Calculate button is clicked
+      const calculateBtn = document.getElementById('calculateProductivityBtn');
+      const calculateMFBtn = document.getElementById('calculateMatchFactorBtn');
+
+      if (calculateBtn) {
+        calculateBtn.addEventListener('click', () => {
+          // Reset after submission
+          setTimeout(() => {
+            userModified = false;
+            waktuInput.value = getCurrentLocalDateTime();
+          }, 100);
+        });
+      }
+
+      if (calculateMFBtn) {
+        calculateMFBtn.addEventListener('click', () => {
+          // Reset after submission
+          setTimeout(() => {
+            userModified = false;
+            waktuInput.value = getCurrentLocalDateTime();
+          }, 100);
+        });
+      }
+    }
   }
 
   // Load saved user data (Nama & NRP)
