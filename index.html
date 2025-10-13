@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="id">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>SmartzProd - Kalkulator Pintar Monitoring Produktivitas Excavator</title>
+		<link
+			rel="icon"
+			type="image/svg+xml"
+			href='data:i				<!-- Match Factor Calculator -->
+				<div class="bg-white 			<!-- Match Factor Calculator -->
+			<div class="bg-white rounded-xl 				<h3 class="text-lg font-semibold tex				<h3 class="text-lg font-semibold text-gray-800 mb-3"><i class="fas fa-chart-line text-purple-500"></i> Chart Match Factor</h3>
+				<div class="w-full h-96">
+					<canvas id="matchFactorChart" class="w-full h-full"></canvas>
+				</div>
+			</div>ray-800 mb-3"><i class="fas fa-chart-bar text-blue-500"></i> Chart Productivity</h3>
+				<div cla				<!-- Message (supports HTML) -->
+				<div id="confirmMessage" class="text-gray-600 mb-8 text-left leading-relaxed">Are you sure you want to proceed?</div>
+
+				<!-- Action Buttons -->
+				<div class="flex gap-4 justify-center flex-wrap">
+					<button id="confirmCancelBtn" class="group relative overflow-hidden px-8 py-3.5 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 border border-gray-300 text-gray-700 font-semibold rounded-xl transition-all duration-500 ease-out hover:shadow-lg hover:border-gray-400 flex items-center gap-2.5">
+						<i class="fas fa-times text-gray-400 group-hover:text-gray-600 transition-all duration-500"></i>
+						<span class="relative z-10">Batal</span>
+						<div class="absolute inset-0 bg-gradient-to-r from-gray-100 to-gray-200 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+					</button>
+					<button id="confirmOkBtn" class="group relative overflow-hidden px-8 py-3.5 font-semibold rounded-xl transition-all duration-500 ease-out flex items-center gap-2.5 shadow-md hover:shadow-2xl transform hover:-translate-y-0.5">
+						<i class="fas fa-check group-hover:scale-110 transition-transform duration-500"></i>
+						<span class="relative z-10">Lanjutkan</span>
+						<div class="absolute inset-0 bg-gradient-to-r opacity-0 group-hover:opacity-20 transition-opacity duration-500 from-white to-transparent"></div>
+					</button>
+				</div>
+			</div>
+		</div>-96">
+					<canvas id="productivityChart" class="w-full h-full"></canvas>
+				</div>adow-sm border border-gray-200 p				<h3 class="text-lg font-semibold text-gray-800 mb-3"><i class="fas fa-chart-line text-purple-500"></i> Chart Match Factor</h3>
+				<div class="w-full h-96">
+					<canvas id="matchFactorChart" class="w-full h-full"></canvas>
+				</div> mb-6 hover:shadow-md transition-shadow duration-200">
+				<div class="flex items-center justify-between mb-6">
+					<div class="flex items-center gap-3">
+						<div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+							<i class="fas fa-balance-scale text-white text-lg"></i>
+						</div>
+						<div>
+							<h2 class="text-xl font-bold text-gray-900">Match Factor Calculator</h2>
+							<p class="text-sm text-gray-500">Analisis keseimbangan fleet</p>
+						</div>
+					</div>
+					<span class="px-3 py-1 bg-purple-50 text-purple-700 text-xs font-semibold rounded-full">Ratio</span>
+				</div>nded-xl shadow-sm border border-gray-200 p-6 mb-6 hover:shadow-md transition-shadow duration-200">
+					<div class="flex items-center justify-between mb-6">
+						<div class="flex items-center gap-3">
+							<div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+								<i class="fas fa-balance-scale text-white text-lg"></i>
+							</div>
+							<div>
+								<h2 class="text-xl font-bold text-gray-900">Match Factor Calculator</h2>
+								<p class="text-sm text-gray-500">Analisis keseimbangan fleet</p>
+							</div>
+						</div>
+						<span class="px-3 py-1 bg-purple-50 text-purple-700 text-xs font-semibold rounded-full">Ratio</span>
+					</div>
+					<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><text x="50%" y="55%" font-size="60" text-anchor="middle" dominant-baseline="middle">⚡</text></svg>' />
+
+		<!-- Tailwind CSS -->
+		<script src="https://cdn.tailwindcss.com"></script>
+
+		<!-- Chart.js -->
+		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+		<!-- ExcelJS -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+
+		<!-- jsPDF for PDF export -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/3.0.3/jspdf.umd.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/5.0.2/jspdf.plugin.autotable.min.js"></script>
+
+		<!-- FontAwesome Icons -->
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" />
+
+		<link rel="stylesheet" href="css/style.css" />
+	</head>
+	<body class="bg-gray-100 font-sans overflow-x-hidden">
+		<!-- Hamburger Menu for Mobile -->
+		<button id="menu-toggle" class="lg:hidden fixed top-4 left-4 z-30 bg-white p-2 rounded-md shadow-md">
+			<i class="fas fa-bars text-gray-700"></i>
+		</button>
+
+		<div class="flex min-h-screen">
+			<!-- Sidebar -->
+			<aside
+				id="sidebar"
+				class="w-80 bg-gradient-to-b from-gray-50 to-white shadow-xl p-4 fixed h-full z-20 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col border-r border-gray-200 overflow-y-auto">
+				<!-- Sidebar Header -->
+				<div class="flex items-center justify-between mb-6 px-2 py-3 bg-white rounded-lg shadow-sm border border-gray-100">
+					<div class="flex items-center sidebar-content">
+						<div class="w-12 h-12 flex items-center justify-center bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-2xl shadow-md">
+							<i class="fas fa-calculator text-xl"></i>
+						</div>
+						<div class="ml-3">
+							<h1 class="text-xl font-bold text-gray-800">SmartzProd</h1>
+							<p class="text-xs text-gray-500">Productivity Monitor</p>
+						</div>
+					</div>
+					<button id="sidebar-toggle-desktop" class="hidden lg:flex items-center justify-center w-8 h-8 text-gray-400 hover:text-gray-600 transition-colors rounded-md hover:bg-gray-100">
+						<i class="fas fa-chevron-left"></i>
+					</button>
+				</div>
+
+				<!-- Primary Actions -->
+				<div class="flex-1 space-y-4 mb-6 sidebar-content">
+					<div class="px-2">
+						<h3 class="text-xs uppercase text-gray-400 font-semibold tracking-wider mb-3">Quick Actions</h3>
+						<div class="space-y-2">
+							<button
+								type="button"
+								id="btnExportProductivityExcel"
+								class="w-full flex items-center px-4 py-3 bg-white text-gray-700 border border-gray-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md group relative overflow-hidden">
+								<div class="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+								<i class="fas fa-file-excel w-6 text-center text-gray-400 group-hover:text-blue-600 transition-colors relative z-10"></i>
+								<span class="ml-3 relative z-10">Export Productivity</span>
+								<i class="fas fa-chevron-right ml-auto text-gray-300 group-hover:text-blue-500 transform group-hover:translate-x-1 transition-all duration-200 relative z-10"></i>
+							</button>
+							<button
+								type="button"
+								id="btnExportMatchFactorExcel"
+								class="w-full flex items-center px-4 py-3 bg-white text-gray-700 border border-gray-200 hover:bg-purple-50 hover:text-purple-600 hover:border-purple-300 rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md group relative overflow-hidden">
+								<div class="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+								<i class="fas fa-file-excel w-6 text-center text-gray-400 group-hover:text-purple-600 transition-colors relative z-10"></i>
+								<span class="ml-3 relative z-10">Export Match Factor</span>
+								<i class="fas fa-chevron-right ml-auto text-gray-300 group-hover:text-purple-500 transform group-hover:translate-x-1 transition-all duration-200 relative z-10"></i>
+							</button>
+
+							<button
+								type="button"
+								id="btnExportProductivityPDF"
+								class="w-full flex items-center px-4 py-3 bg-white text-gray-700 border border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-300 rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md group relative overflow-hidden">
+								<div class="absolute inset-0 bg-gradient-to-r from-red-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+								<i class="fas fa-file-pdf w-6 text-center text-gray-400 group-hover:text-red-600 transition-colors relative z-10"></i>
+								<span class="ml-3 relative z-10">PDF Productivity</span>
+								<i class="fas fa-chevron-right ml-auto text-gray-300 group-hover:text-red-500 transform group-hover:translate-x-1 transition-all duration-200 relative z-10"></i>
+							</button>
+
+							<button
+								type="button"
+								id="btnExportMatchFactorPDF"
+								class="w-full flex items-center px-4 py-3 bg-white text-gray-700 border border-gray-200 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-300 rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md group relative overflow-hidden">
+								<div class="absolute inset-0 bg-gradient-to-r from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+								<i class="fas fa-file-pdf w-6 text-center text-gray-400 group-hover:text-orange-600 transition-colors relative z-10"></i>
+								<span class="ml-3 relative z-10">PDF Match Factor</span>
+								<i class="fas fa-chevron-right ml-auto text-gray-300 group-hover:text-orange-500 transform group-hover:translate-x-1 transition-all duration-200 relative z-10"></i>
+							</button>
+
+							<!-- Divider -->
+							<div class="border-t border-gray-200 my-3"></div>
+
+							<!-- Backup Data Button -->
+							<button
+								type="button"
+								id="btnBackupData"
+								class="w-full flex items-center px-4 py-3 bg-white text-gray-700 border border-gray-200 hover:bg-green-50 hover:text-green-600 hover:border-green-300 rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md group relative overflow-hidden">
+								<div class="absolute inset-0 bg-gradient-to-r from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+								<i class="fas fa-download w-6 text-center text-gray-400 group-hover:text-green-600 transition-colors relative z-10"></i>
+								<span class="ml-3 relative z-10">Backup Data</span>
+								<i class="fas fa-chevron-right ml-auto text-gray-300 group-hover:text-green-500 transform group-hover:translate-x-1 transition-all duration-200 relative z-10"></i>
+							</button>
+
+							<!-- Restore Data Button -->
+							<button
+								type="button"
+								id="btnRestoreData"
+								class="w-full flex items-center px-4 py-3 bg-white text-gray-700 border border-gray-200 hover:bg-teal-50 hover:text-teal-600 hover:border-teal-300 rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md group relative overflow-hidden">
+								<div class="absolute inset-0 bg-gradient-to-r from-teal-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+								<i class="fas fa-upload w-6 text-center text-gray-400 group-hover:text-teal-600 transition-colors relative z-10"></i>
+								<span class="ml-3 relative z-10">Restore Data</span>
+								<i class="fas fa-chevron-right ml-auto text-gray-300 group-hover:text-teal-500 transform group-hover:translate-x-1 transition-all duration-200 relative z-10"></i>
+							</button>
+						</div>
+					</div>
+
+					<!-- Filters Section (Collapsible) -->
+					<div class="px-2">
+						<button
+							id="filters-toggle"
+							class="w-full flex items-center justify-between px-4 py-3 text-left text-sm font-semibold text-gray-700 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 rounded-lg transition-all duration-200 border border-gray-200 shadow-sm">
+							<span class="flex items-center">
+								<i class="fas fa-filter mr-2 text-gray-500"></i>
+								Filter Data
+							</span>
+							<i id="filters-chevron" class="fas fa-chevron-down transition-transform duration-200 text-gray-400"></i>
+						</button>
+						<div id="filters-content" class="mt-3 space-y-3 px-1">
+							<div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm space-y-3">
+								<div>
+									<label for="filterNama" class="block text-xs font-medium text-gray-600 mb-1">Filter Nama Pengawas</label>
+									<select id="filterNama" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 transition-all">
+										<option value="">Semua Pengawas</option>
+									</select>
+								</div>
+								<div>
+									<label for="filterNRP" class="block text-xs font-medium text-gray-600 mb-1">Filter NRP</label>
+									<select id="filterNRP" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 transition-all">
+										<option value="">Semua NRP</option>
+									</select>
+								</div>
+								<div>
+									<label for="filterExcavator" class="block text-xs font-medium text-gray-600 mb-1">Filter No Excavator</label>
+									<select id="filterExcavator" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 transition-all">
+										<option value="">Semua Excavator</option>
+									</select>
+								</div>
+								<button id="clearFiltersBtn" class="w-full flex items-center justify-center bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-medium transition-colors shadow-sm">
+									<i class="fas fa-eraser mr-2"></i>Reset Filters
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Collapsed State Icons (hidden by default, shown when sidebar is collapsed) -->
+				<div class="collapsed-icons hidden flex flex-col items-center space-y-6 mt-6">
+					<!-- Export Productivity Excel Icon (Blue) -->
+					<div class="group relative" id="collapsed-productivity-excel">
+						<div
+							class="w-14 h-14 flex items-center justify-center bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:scale-110">
+							<i class="fas fa-file-excel text-2xl"></i>
+						</div>
+						<div class="absolute left-full ml-3 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+							Export Productivity
+						</div>
+					</div>
+					<!-- Export Match Factor Excel Icon (Purple) -->
+					<div class="group relative" id="collapsed-matchfactor-excel">
+						<div
+							class="w-14 h-14 flex items-center justify-center bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:scale-110">
+							<i class="fas fa-file-excel text-2xl"></i>
+						</div>
+						<div class="absolute left-full ml-3 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+							Export Match Factor
+						</div>
+					</div>
+
+					<!-- PDF Productivity Export Icon (Red) -->
+					<div class="group relative" id="collapsed-pdf-productivity">
+						<div class="w-14 h-14 flex items-center justify-center bg-gradient-to-r from-red-500 to-red-600 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:scale-110">
+							<i class="fas fa-file-pdf text-2xl"></i>
+						</div>
+						<div class="absolute left-full ml-3 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+							PDF Productivity
+						</div>
+					</div>
+
+					<!-- PDF Match Factor Export Icon (Orange) -->
+					<div class="group relative" id="collapsed-pdf-matchfactor">
+						<div
+							class="w-14 h-14 flex items-center justify-center bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:scale-110">
+							<i class="fas fa-file-pdf text-2xl"></i>
+						</div>
+						<div class="absolute left-full ml-3 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+							PDF Match Factor
+						</div>
+					</div>
+				</div>
+
+				<!-- Footer Section -->
+				<div class="mt-auto pt-4 border-t border-gray-200 sidebar-content">
+					<div class="px-2">
+						<div class="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+							<div class="text-xs text-gray-500 text-center">
+								<span class="font-medium">SmartzProd</span> <span class="text-gray-400">v1.0</span>
+								<br />
+								<span class="text-gray-400">Made with ❤️</span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</aside>
+
+			<!-- Main Content -->
+			<main class="flex-1 flex flex-col p-4 lg:p-8 bg-gray-50 lg:ml-80 transition-all duration-300 ease-in-out max-w-full overflow-x-hidden">
+				<!-- Header with Stats Cards -->
+				<div class="mb-8">
+					<div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+						<div>
+							<h1 class="text-3xl font-bold text-gray-900 mb-2">Dashboard Produktivitas</h1>
+							<p class="text-gray-600">Monitor dan analisis performa excavator secara real-time</p>
+						</div>
+						<div class="mt-4 md:mt-0 flex flex-wrap items-center gap-3">
+							<div class="px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-lg hover:shadow-sm transition-shadow">
+								<div class="flex items-center gap-2">
+									<i class="fas fa-calendar-alt text-blue-600"></i>
+									<div>
+										<p class="text-xs text-blue-600 font-medium">Last Updated</p>
+										<p class="text-sm font-semibold text-gray-900" id="lastUpdate">-</p>
+									</div>
+								</div>
+							</div>
+							<div class="px-4 py-2.5 bg-green-50 border border-green-200 rounded-lg hover:shadow-sm transition-shadow">
+								<div class="flex items-center gap-2">
+									<i class="fas fa-database text-green-600"></i>
+									<div>
+										<p class="text-xs text-green-600 font-medium">Total Records</p>
+										<p class="text-sm font-semibold text-gray-900" id="totalRecords">0</p>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- Data Umum Input -->
+				<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6 hover:shadow-md transition-shadow duration-200">
+					<div class="flex items-center justify-between mb-6">
+						<div class="flex items-center gap-3">
+							<div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
+								<i class="fas fa-user-tie text-white text-lg"></i>
+							</div>
+							<div>
+								<h2 class="text-xl font-bold text-gray-900">Data Umum</h2>
+								<p class="text-sm text-gray-500">Informasi operator dan equipment</p>
+							</div>
+						</div>
+						<span class="px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-full">Required</span>
+					</div>
+					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+						<!-- Nama Pengawas -->
+						<div class="relative">
+							<label for="namaPengawas" class="block text-sm font-semibold text-gray-700 mb-2">
+								<i class="fas fa-user text-indigo-500 mr-1"></i>Nama Pengawas
+								<span class="text-red-500">*</span>
+							</label>
+							<div class="relative">
+								<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+									<i class="fas fa-user-circle text-gray-400"></i>
+								</div>
+								<input
+									type="text"
+									id="namaPengawas"
+									class="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all hover:border-indigo-300 peer"
+									placeholder="Masukkan nama pengawas"
+									required
+									aria-describedby="namaPengawas-help" />
+								<!-- Validation icon placeholder -->
+								<div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+									<i class="fas fa-check-circle text-green-500 hidden" id="namaPengawas-valid"></i>
+									<i class="fas fa-exclamation-circle text-red-500 hidden" id="namaPengawas-invalid"></i>
+								</div>
+							</div>
+							<p class="mt-1 text-xs text-gray-500" id="namaPengawas-help"><i class="fas fa-info-circle mr-1"></i>Nama supervisor yang bertugas</p>
+						</div>
+
+						<!-- NRP -->
+						<div class="relative">
+							<label for="nrp" class="block text-sm font-semibold text-gray-700 mb-2">
+								<i class="fas fa-id-card text-indigo-500 mr-1"></i>NRP
+								<span class="text-red-500">*</span>
+							</label>
+							<div class="relative">
+								<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+									<i class="fas fa-hashtag text-gray-400"></i>
+								</div>
+								<input
+									type="text"
+									id="nrp"
+									class="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all hover:border-indigo-300 peer"
+									placeholder="Nomor registrasi"
+									required
+									aria-describedby="nrp-help" />
+								<div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+									<i class="fas fa-check-circle text-green-500 hidden" id="nrp-valid"></i>
+									<i class="fas fa-exclamation-circle text-red-500 hidden" id="nrp-invalid"></i>
+								</div>
+							</div>
+							<p class="mt-1 text-xs text-gray-500" id="nrp-help"><i class="fas fa-info-circle mr-1"></i>Nomor registrasi pekerja</p>
+						</div>
+
+						<!-- Waktu -->
+						<div class="relative">
+							<label for="waktu" class="block text-sm font-semibold text-gray-700 mb-2">
+								<i class="fas fa-clock text-indigo-500 mr-1"></i>Waktu
+								<span class="text-red-500">*</span>
+							</label>
+							<div class="relative">
+								<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+									<i class="fas fa-calendar-alt text-gray-400"></i>
+								</div>
+								<input
+									type="datetime-local"
+									id="waktu"
+									class="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all hover:border-indigo-300 peer"
+									required
+									aria-describedby="waktu-help" />
+							</div>
+							<p class="mt-1 text-xs text-gray-500" id="waktu-help"><i class="fas fa-info-circle mr-1"></i>Waktu pencatatan data</p>
+						</div>
+
+						<!-- No Excavator -->
+						<div class="relative">
+							<label for="noExcavator" class="block text-sm font-semibold text-gray-700 mb-2">
+								<i class="fas fa-truck-moving text-indigo-500 mr-1"></i>No Excavator
+								<span class="text-red-500">*</span>
+							</label>
+							<div class="relative">
+								<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+									<i class="fas fa-truck text-gray-400"></i>
+								</div>
+								<input
+									type="text"
+									id="noExcavator"
+									class="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all hover:border-indigo-300 peer"
+									placeholder="Contoh: EX2030"
+									required
+									pattern="EX[0-9]{4}"
+									aria-describedby="noExcavator-help" />
+								<div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+									<i class="fas fa-check-circle text-green-500 hidden" id="noExcavator-valid"></i>
+									<i class="fas fa-exclamation-circle text-red-500 hidden" id="noExcavator-invalid"></i>
+								</div>
+							</div>
+							<p class="mt-1 text-xs text-gray-500" id="noExcavator-help"><i class="fas fa-info-circle mr-1"></i>Format: EX2030, EX2031, dst.</p>
+						</div>
+					</div>
+				</div>
+
+				<!-- Productivity Calculator -->
+				<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6 hover:shadow-md transition-shadow duration-200">
+					<div class="flex items-center justify-between mb-6">
+						<div class="flex items-center gap-3">
+							<div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+								<i class="fas fa-chart-line text-white text-lg"></i>
+							</div>
+							<div>
+								<h2 class="text-xl font-bold text-gray-900">Productivity Calculator</h2>
+								<p class="text-sm text-gray-500">Hitung produktivitas excavator</p>
+							</div>
+						</div>
+						<span class="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full">BCM/Jam</span>
+					</div>
+					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+						<!-- Jumlah Ritase -->
+						<div class="relative">
+							<label for="jumlahRitase" class="block text-sm font-semibold text-gray-700 mb-2">
+								<i class="fas fa-repeat text-blue-500 mr-1"></i>Jumlah Ritase
+								<span class="text-red-500">*</span>
+							</label>
+							<div class="relative">
+								<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+									<i class="fas fa-hashtag text-gray-400"></i>
+								</div>
+								<input
+									type="number"
+									id="jumlahRitase"
+									class="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all hover:border-blue-300 peer"
+									placeholder="0"
+									min="0"
+									required
+									aria-describedby="jumlahRitase-help" />
+								<div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+									<i class="fas fa-check-circle text-green-500 hidden" id="jumlahRitase-valid"></i>
+									<i class="fas fa-exclamation-circle text-red-500 hidden" id="jumlahRitase-invalid"></i>
+								</div>
+							</div>
+							<p class="mt-1 text-xs text-gray-500" id="jumlahRitase-help"><i class="fas fa-info-circle mr-1"></i>Total trip hauler</p>
+						</div>
+
+						<!-- HM Awal -->
+						<div class="relative">
+							<label for="hmAwal" class="block text-sm font-semibold text-gray-700 mb-2">
+								<i class="fas fa-hourglass-start text-blue-500 mr-1"></i>HM Awal
+								<span class="text-red-500">*</span>
+							</label>
+							<div class="relative">
+								<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+									<i class="fas fa-tachometer-alt text-gray-400"></i>
+								</div>
+								<input
+									type="number"
+									id="hmAwal"
+									step="0.01"
+									class="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all hover:border-blue-300 peer"
+									placeholder="0.00"
+									required
+									aria-describedby="hmAwal-help" />
+								<div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+									<i class="fas fa-check-circle text-green-500 hidden" id="hmAwal-valid"></i>
+									<i class="fas fa-exclamation-circle text-red-500 hidden" id="hmAwal-invalid"></i>
+								</div>
+							</div>
+							<p class="mt-1 text-xs text-gray-500" id="hmAwal-help"><i class="fas fa-info-circle mr-1"></i>Hour meter awal (jam)</p>
+						</div>
+
+						<!-- HM Akhir -->
+						<div class="relative">
+							<label for="hmAkhir" class="block text-sm font-semibold text-gray-700 mb-2">
+								<i class="fas fa-hourglass-end text-blue-500 mr-1"></i>HM Akhir
+								<span class="text-red-500">*</span>
+							</label>
+							<div class="relative">
+								<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+									<i class="fas fa-tachometer-alt text-gray-400"></i>
+								</div>
+								<input
+									type="number"
+									id="hmAkhir"
+									step="0.01"
+									class="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all hover:border-blue-300 peer"
+									placeholder="0.00"
+									required
+									aria-describedby="hmAkhir-help" />
+								<div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+									<i class="fas fa-check-circle text-green-500 hidden" id="hmAkhir-valid"></i>
+									<i class="fas fa-exclamation-circle text-red-500 hidden" id="hmAkhir-invalid"></i>
+								</div>
+							</div>
+							<p class="mt-1 text-xs text-gray-500" id="hmAkhir-help"><i class="fas fa-info-circle mr-1"></i>Hour meter akhir (jam)</p>
+							<p class="mt-1 text-xs text-red-500 hidden" id="hmAkhir-error"><i class="fas fa-exclamation-triangle mr-1"></i>HM Akhir harus lebih besar dari HM Awal</p>
+						</div>
+
+						<!-- Kapasitas Vessel -->
+						<div class="relative">
+							<label for="kapasitas" class="block text-sm font-semibold text-gray-700 mb-2">
+								<i class="fas fa-box text-blue-500 mr-1"></i>Kapasitas Vessel
+								<span class="text-red-500">*</span>
+							</label>
+							<div class="relative">
+								<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+									<i class="fas fa-cube text-gray-400"></i>
+								</div>
+								<input
+									type="number"
+									id="kapasitas"
+									step="0.01"
+									class="w-full pl-10 pr-16 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all hover:border-blue-300 peer"
+									placeholder="0.00"
+									min="0"
+									required
+									aria-describedby="kapasitas-help" />
+								<div class="absolute inset-y-0 right-0 pr-3 flex items-center gap-2">
+									<span class="text-xs font-medium text-gray-500">BCM</span>
+									<i class="fas fa-check-circle text-green-500 hidden" id="kapasitas-valid"></i>
+									<i class="fas fa-exclamation-circle text-red-500 hidden" id="kapasitas-invalid"></i>
+								</div>
+							</div>
+							<p class="mt-1 text-xs text-gray-500" id="kapasitas-help"><i class="fas fa-info-circle mr-1"></i>Kapasitas dalam BCM</p>
+						</div>
+					</div>
+					<button
+						id="btnHitungProductivity"
+						class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold px-8 py-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2 group">
+						<i class="fas fa-calculator group-hover:scale-110 transition-transform"></i>
+						<span>Hitung Productivity</span>
+					</button>
+				</div>
+
+				<!-- Match Factor Calculator -->
+				<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6 hover:shadow-md transition-shadow duration-200">
+					<div class="flex items-center justify-between mb-6">
+						<div class="flex items-center gap-3">
+							<div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+								<i class="fas fa-cogs text-white text-lg"></i>
+							</div>
+							<div>
+								<h2 class="text-xl font-bold text-gray-900">Match Factor Calculator</h2>
+								<p class="text-sm text-gray-500">Analisis rasio excavator dan hauler</p>
+							</div>
+						</div>
+						<span class="px-3 py-1 bg-purple-50 text-purple-700 text-xs font-semibold rounded-full">Ratio</span>
+					</div>
+					<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+						<!-- Jumlah HD -->
+						<div class="relative">
+							<label for="jumlahHD" class="block text-sm font-semibold text-gray-700 mb-2">
+								<i class="fas fa-truck text-purple-500 mr-1"></i>Jumlah HD
+								<span class="text-red-500">*</span>
+							</label>
+							<div class="relative">
+								<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+									<i class="fas fa-hashtag text-gray-400"></i>
+								</div>
+								<input
+									type="number"
+									id="jumlahHD"
+									class="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all hover:border-purple-300 peer"
+									placeholder="0"
+									min="0"
+									required
+									aria-describedby="jumlahHD-help" />
+								<div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+									<i class="fas fa-check-circle text-green-500 hidden" id="jumlahHD-valid"></i>
+									<i class="fas fa-exclamation-circle text-red-500 hidden" id="jumlahHD-invalid"></i>
+								</div>
+							</div>
+							<p class="mt-1 text-xs text-gray-500" id="jumlahHD-help"><i class="fas fa-info-circle mr-1"></i>Jumlah dump truck hauler</p>
+						</div>
+
+						<!-- Cycle Time Hauler -->
+						<div class="relative">
+							<label for="cycleTimeHauler" class="block text-sm font-semibold text-gray-700 mb-2">
+								<i class="fas fa-clock text-purple-500 mr-1"></i>Cycle Time Hauler
+								<span class="text-red-500">*</span>
+							</label>
+							<div class="relative">
+								<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+									<i class="fas fa-stopwatch text-gray-400"></i>
+								</div>
+								<input
+									type="number"
+									id="cycleTimeHauler"
+									step="0.01"
+									class="w-full pl-10 pr-20 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all hover:border-purple-300 peer"
+									placeholder="0.00"
+									min="0"
+									required
+									aria-describedby="cycleTimeHauler-help" />
+								<div class="absolute inset-y-0 right-0 pr-3 flex items-center gap-2">
+									<span class="text-xs font-medium text-gray-500">menit</span>
+									<i class="fas fa-check-circle text-green-500 hidden" id="cycleTimeHauler-valid"></i>
+									<i class="fas fa-exclamation-circle text-red-500 hidden" id="cycleTimeHauler-invalid"></i>
+								</div>
+							</div>
+							<p class="mt-1 text-xs text-gray-500" id="cycleTimeHauler-help"><i class="fas fa-info-circle mr-1"></i>Waktu siklus hauler</p>
+						</div>
+
+						<!-- Cycle Time Loader -->
+						<div class="relative">
+							<label for="cycleTimeLoader" class="block text-sm font-semibold text-gray-700 mb-2">
+								<i class="fas fa-clock text-purple-500 mr-1"></i>Cycle Time Loader
+								<span class="text-red-500">*</span>
+							</label>
+							<div class="relative">
+								<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+									<i class="fas fa-stopwatch text-gray-400"></i>
+								</div>
+								<input
+									type="number"
+									id="cycleTimeLoader"
+									step="0.01"
+									class="w-full pl-10 pr-20 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all hover:border-purple-300 peer"
+									placeholder="0.00"
+									min="0"
+									required
+									aria-describedby="cycleTimeLoader-help" />
+								<div class="absolute inset-y-0 right-0 pr-3 flex items-center gap-2">
+									<span class="text-xs font-medium text-gray-500">menit</span>
+									<i class="fas fa-check-circle text-green-500 hidden" id="cycleTimeLoader-valid"></i>
+									<i class="fas fa-exclamation-circle text-red-500 hidden" id="cycleTimeLoader-invalid"></i>
+								</div>
+							</div>
+							<p class="mt-1 text-xs text-gray-500" id="cycleTimeLoader-help"><i class="fas fa-info-circle mr-1"></i>Waktu siklus excavator</p>
+						</div>
+					</div>
+					<button
+						id="btnHitungMatchFactor"
+						class="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold px-8 py-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2 group">
+						<i class="fas fa-calculator group-hover:scale-110 transition-transform"></i>
+						<span>Hitung Match Factor</span>
+					</button>
+				</div>
+
+				<!-- Individual Charts Per Excavator -->
+				<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-6">
+					<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-6">
+						<div class="flex items-center gap-2 sm:gap-3">
+							<div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+								<i class="fas fa-chart-area text-white text-lg sm:text-xl"></i>
+							</div>
+							<div>
+								<h2 class="text-lg sm:text-2xl font-bold text-gray-900">Performance Dashboard</h2>
+								<p class="text-xs sm:text-sm text-gray-500 mt-0.5">Individual charts per excavator</p>
+							</div>
+						</div>
+						<!-- Responsive buttons -->
+						<div class="flex gap-2 w-full sm:w-auto">
+							<button onclick="expandAllExcavators()" class="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-xs sm:text-sm font-medium">
+								<i class="fas fa-expand-alt mr-1 sm:mr-2"></i>
+								<span class="hidden sm:inline">Expand All</span>
+								<span class="sm:hidden">Expand</span>
+							</button>
+							<button onclick="collapseAllExcavators()" class="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors text-xs sm:text-sm font-medium">
+								<i class="fas fa-compress-alt mr-1 sm:mr-2"></i>
+								<span class="hidden sm:inline">Collapse All</span>
+								<span class="sm:hidden">Collapse</span>
+							</button>
+						</div>
+					</div>
+
+					<!-- Individual Charts Container -->
+					<div id="individualChartsContainer" class="space-y-3 sm:space-y-4">
+						<!-- Charts will be dynamically generated here -->
+					</div>
+				</div>
+
+				<!-- Productivity Table -->
+				<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-6">
+					<!-- Table Header -->
+					<div class="flex items-center justify-between mb-6">
+						<div class="flex items-center gap-3">
+							<div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+								<i class="fas fa-table text-white text-lg sm:text-xl"></i>
+							</div>
+							<div>
+								<h2 class="text-xl sm:text-2xl font-bold text-gray-900">Tabel Productivity</h2>
+								<p class="text-xs sm:text-sm text-gray-500 mt-0.5">Data produktivitas excavator</p>
+							</div>
+						</div>
+						<!-- Mobile: Show record count -->
+						<div class="lg:hidden bg-blue-50 px-3 py-1.5 rounded-lg">
+							<span class="text-xs font-semibold text-blue-700" id="productivityCount">0 data</span>
+						</div>
+					</div>
+
+					<!-- Table Container: Scrollable with sticky header -->
+					<div class="overflow-x-auto -mx-4 sm:mx-0 max-h-[500px] lg:max-h-[600px] overflow-y-auto">
+						<div class="inline-block min-w-full align-middle">
+							<div class="overflow-hidden border-b border-gray-200 sm:rounded-lg">
+								<table class="min-w-full divide-y divide-gray-200">
+									<!-- Sticky Header -->
+									<thead class="bg-gradient-to-r from-blue-50 to-blue-100 sticky top-0 z-10 shadow-sm">
+										<tr>
+											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase tracking-wider border-b-2 border-blue-200">No</th>
+											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase tracking-wider border-b-2 border-blue-200">Pengawas</th>
+											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase tracking-wider border-b-2 border-blue-200">NRP</th>
+											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase tracking-wider border-b-2 border-blue-200">Waktu</th>
+											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase tracking-wider border-b-2 border-blue-200">No Excavator</th>
+											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase tracking-wider border-b-2 border-blue-200">Ritase</th>
+											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase tracking-wider border-b-2 border-blue-200">HM Awal</th>
+											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase tracking-wider border-b-2 border-blue-200">HM Akhir</th>
+											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase tracking-wider border-b-2 border-blue-200">Kapasitas (BCM)</th>
+											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase tracking-wider border-b-2 border-blue-200">
+												<div class="flex items-center gap-1">
+													<span>Productivity</span>
+													<span class="text-[10px] font-normal">(BCM/Jam)</span>
+												</div>
+											</th>
+											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-center text-xs font-bold text-blue-900 uppercase tracking-wider border-b-2 border-blue-200">Aksi</th>
+										</tr>
+									</thead>
+
+									<!-- Table Body with Zebra Stripes -->
+									<tbody id="productivityTableBody" class="bg-white divide-y divide-gray-100">
+										<!-- Data will be inserted here by JavaScript with zebra striping -->
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Match Factor Table -->
+				<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-6">
+					<!-- Table Header -->
+					<div class="flex items-center justify-between mb-6">
+						<div class="flex items-center gap-3">
+							<div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+								<i class="fas fa-table text-white text-lg sm:text-xl"></i>
+							</div>
+							<div>
+								<h2 class="text-xl sm:text-2xl font-bold text-gray-900">Tabel Match Factor</h2>
+								<p class="text-xs sm:text-sm text-gray-500 mt-0.5">Data match factor excavator</p>
+							</div>
+						</div>
+						<!-- Mobile: Show record count -->
+						<div class="lg:hidden bg-purple-50 px-3 py-1.5 rounded-lg">
+							<span class="text-xs font-semibold text-purple-700" id="matchFactorCount">0 data</span>
+						</div>
+					</div>
+
+					<!-- Table Container: Scrollable with sticky header -->
+					<div class="overflow-x-auto -mx-4 sm:mx-0 max-h-[500px] lg:max-h-[600px] overflow-y-auto">
+						<div class="inline-block min-w-full align-middle">
+							<div class="overflow-hidden border-b border-gray-200 sm:rounded-lg">
+								<table class="min-w-full divide-y divide-gray-200">
+									<!-- Sticky Header -->
+									<thead class="bg-gradient-to-r from-purple-50 to-purple-100 sticky top-0 z-10 shadow-sm">
+										<tr>
+											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-purple-900 uppercase tracking-wider border-b-2 border-purple-200">No</th>
+											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-purple-900 uppercase tracking-wider border-b-2 border-purple-200">Pengawas</th>
+											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-purple-900 uppercase tracking-wider border-b-2 border-purple-200">NRP</th>
+											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-purple-900 uppercase tracking-wider border-b-2 border-purple-200">Waktu</th>
+											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-purple-900 uppercase tracking-wider border-b-2 border-purple-200">No Excavator</th>
+											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-purple-900 uppercase tracking-wider border-b-2 border-purple-200">Jumlah HD</th>
+											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-purple-900 uppercase tracking-wider border-b-2 border-purple-200">CT Hauler (min)</th>
+											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-purple-900 uppercase tracking-wider border-b-2 border-purple-200">CT Loader (min)</th>
+											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-purple-900 uppercase tracking-wider border-b-2 border-purple-200">Match Factor</th>
+											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-center text-xs font-bold text-purple-900 uppercase tracking-wider border-b-2 border-purple-200">Aksi</th>
+										</tr>
+									</thead>
+
+									<!-- Table Body with Zebra Stripes -->
+									<tbody id="matchFactorTableBody" class="bg-white divide-y divide-gray-100">
+										<!-- Data will be inserted here by JavaScript with zebra striping -->
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+			</main>
+		</div>
+
+		<!-- Edit Modal -->
+		<!-- Edit Modal (Enhanced Style - Fully Responsive) -->
+		<div id="editModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4 sm:p-6 animate-fade-in">
+			<div class="bg-white rounded-2xl max-w-md w-full shadow-2xl animate-modal-slide-up overflow-hidden max-h-[90vh] flex flex-col">
+				<!-- Decorative Top Bar (Blue for Edit) -->
+				<div class="h-2 bg-gradient-to-r from-blue-500 to-blue-600 flex-shrink-0"></div>
+
+				<div class="p-4 sm:p-6 md:p-8 overflow-y-auto flex-1">
+					<!-- Animated Icon -->
+					<div class="flex justify-center mb-4">
+						<div class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-600 shadow-xl animate-bounce-in">
+							<div class="absolute inset-0 rounded-full bg-blue-400 opacity-25 animate-pulse"></div>
+							<i class="fas fa-edit text-2xl sm:text-3xl text-white relative z-10"></i>
+						</div>
+					</div>
+
+					<!-- Title -->
+					<h3 class="text-xl sm:text-2xl font-bold text-gray-900 text-center mb-4 sm:mb-6">Edit Data</h3>
+
+					<!-- Content -->
+					<div id="editModalContent" class="mb-4 sm:mb-6"></div>
+
+					<!-- Action Buttons (Centered, Stack on Mobile) -->
+					<div class="flex flex-col sm:flex-row justify-center gap-3">
+						<!-- Cancel Button -->
+						<button
+							id="btnCancelEdit"
+							class="group relative overflow-hidden px-6 sm:px-8 py-3 sm:py-3.5 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded-xl transition-all duration-300 ease-out hover:border-gray-400 hover:bg-gray-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 active:scale-95 w-full sm:w-auto">
+							<span class="relative flex items-center justify-center gap-2">
+								<i class="fas fa-times transition-transform group-hover:rotate-90 duration-300"></i>
+								<span>Batal</span>
+							</span>
+						</button>
+
+						<!-- Save Button (Primary with Shimmer) -->
+						<button
+							id="btnSaveEdit"
+							class="group relative overflow-hidden px-6 sm:px-8 py-3 sm:py-3.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 ease-out hover:from-blue-600 hover:to-blue-700 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 active:scale-95 w-full sm:w-auto">
+							<!-- Shimmer Effect -->
+							<span class="absolute inset-0 shimmer opacity-0 group-hover:opacity-100"></span>
+
+							<!-- Button Content -->
+							<span class="relative flex items-center justify-center gap-2 z-10">
+								<i class="fas fa-save transition-transform group-hover:scale-110 duration-300"></i>
+								<span>Simpan</span>
+							</span>
+						</button>
+					</div>
+
+					<!-- Keyboard Hint -->
+					<p class="text-center text-xs text-gray-400 mt-3 sm:mt-4">Tekan <kbd class="px-2 py-1 bg-gray-100 border border-gray-300 rounded text-gray-600">ESC</kbd> untuk batal</p>
+				</div>
+			</div>
+		</div>
+
+		<!-- Confirmation Modal (Enhanced Delete Modal - Fully Responsive) -->
+		<div id="confirmModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-3 sm:p-4 md:p-6 animate-fade-in">
+			<div class="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-[95%] sm:max-w-md lg:max-w-lg transform transition-all scale-95 opacity-0 modal-content overflow-hidden max-h-[90vh] sm:max-h-[85vh] flex flex-col">
+				<!-- Decorative Top Bar -->
+				<div id="confirmTopBar" class="h-1.5 sm:h-2 bg-gradient-to-r from-red-500 to-red-600 flex-shrink-0"></div>
+
+				<div class="p-3 sm:p-4 md:p-6 lg:p-8 overflow-y-auto flex-1">
+					<!-- Icon and Title -->
+					<div class="flex flex-col items-center text-center mb-3 sm:mb-4 md:mb-6">
+						<!-- Animated Icon Container -->
+						<div id="confirmIcon" class="relative w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center mb-2 sm:mb-3 md:mb-4 shadow-xl animate-bounce-in">
+							<div class="absolute inset-0 rounded-full bg-gradient-to-br from-red-500 to-red-600 opacity-20 animate-pulse"></div>
+							<div class="relative w-full h-full rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
+								<i class="fas fa-trash-alt text-xl sm:text-2xl md:text-3xl text-white"></i>
+							</div>
+						</div>
+
+						<h3 id="confirmTitle" class="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-1 sm:mb-2">Hapus Data</h3>
+						<p class="text-[10px] sm:text-xs md:text-sm text-gray-500">Tindakan ini tidak dapat dibatalkan</p>
+					</div>
+
+					<!-- Message Card -->
+					<div class="bg-red-50 border-l-4 border-red-500 rounded-lg p-2.5 sm:p-3 md:p-4 mb-3 sm:mb-4 md:mb-6">
+						<div id="confirmMessage" class="text-gray-700 text-[10px] sm:text-xs md:text-sm leading-relaxed">Apakah Anda yakin ingin menghapus data ini? Data yang dihapus tidak dapat dikembalikan.</div>
+					</div>
+					<!-- Data Preview (will be populated dynamically) -->
+					<div id="confirmDataPreview" class="hidden bg-gray-50 rounded-lg p-2.5 sm:p-3 md:p-4 mb-3 sm:mb-4 md:mb-6 border border-gray-200">
+						<p class="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase mb-2">Data yang akan dihapus:</p>
+						<div id="confirmDataContent" class="text-[10px] sm:text-xs md:text-sm text-gray-700"></div>
+					</div>
+
+					<!-- Action Buttons (Centered, Stack on Mobile) -->
+					<div class="flex flex-col sm:flex-row justify-center gap-2 sm:gap-3">
+						<!-- Cancel Button (Minimalist Outline) -->
+						<button
+							id="confirmCancelBtn"
+							class="group relative overflow-hidden px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-3.5 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded-lg sm:rounded-xl transition-all duration-300 ease-out hover:border-gray-400 hover:bg-gray-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 active:scale-95 w-full sm:w-auto text-sm sm:text-base">
+							<span class="relative flex items-center justify-center gap-2">
+								<i class="fas fa-times transition-transform group-hover:rotate-90 duration-300 text-sm sm:text-base"></i>
+								<span>Batal</span>
+							</span>
+						</button>
+
+						<!-- Delete Button (Danger with Animation) -->
+						<button
+							id="confirmOkBtn"
+							class="group relative overflow-hidden px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-3.5 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-lg sm:rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 ease-out hover:from-red-600 hover:to-red-700 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 active:scale-95 w-full sm:w-auto text-sm sm:text-base">
+							<!-- Shimmer Effect -->
+							<span class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"></span>
+
+							<!-- Button Content -->
+							<span class="relative flex items-center justify-center gap-2">
+								<i class="fas fa-trash-alt transition-transform group-hover:scale-110 duration-300 text-sm sm:text-base"></i>
+								<span>Hapus</span>
+							</span>
+						</button>
+					</div>
+
+					<!-- Keyboard Shortcut Hint -->
+					<div class="mt-2 sm:mt-3 md:mt-4 text-center">
+						<p class="text-[10px] sm:text-xs text-gray-400"><kbd class="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-gray-100 rounded text-gray-600 font-mono text-[9px] sm:text-xs">ESC</kbd> untuk batal</p>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- Toast Notification Container -->
+		<div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+		<!-- Hidden File Input for Restore -->
+		<input type="file" id="restoreFileInput" accept=".json" class="hidden" />
+
+		<!-- Floating Info Button (Minimalistic) -->
+		<button
+			id="infoBtn"
+			class="fixed bottom-4 right-4 z-40 w-8 h-8 sm:w-9 sm:h-9 text-gray-400 flex items-center justify-center transition-all duration-200 ease-out hover:text-gray-600 hover:scale-110 !outline-none focus:!outline-none focus:!ring-0 focus:!border-0 active:scale-90 active:!outline-none"
+			style="outline: none !important; box-shadow: none !important"
+			title="Informasi & Cara Perhitungan">
+			<i class="fas fa-circle-info text-xl sm:text-2xl"></i>
+		</button>
+
+		<!-- Info Modal -->
+		<div id="infoModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-3 sm:p-4 md:p-6 animate-fade-in">
+			<div class="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-[95%] sm:max-w-2xl lg:max-w-3xl transform transition-all scale-95 opacity-0 modal-content overflow-hidden max-h-[90vh] sm:max-h-[85vh] flex flex-col">
+				<!-- Header with Gradient -->
+				<div class="bg-gradient-to-r from-blue-500 to-indigo-600 p-4 sm:p-6 flex-shrink-0">
+					<div class="flex items-center justify-between">
+						<div class="flex items-center gap-3 sm:gap-4">
+							<div class="w-12 h-12 sm:w-14 sm:h-14 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+								<i class="fas fa-info-circle text-white text-2xl sm:text-3xl"></i>
+							</div>
+							<div>
+								<h2 class="text-xl sm:text-2xl font-bold text-white">Informasi Aplikasi</h2>
+								<p class="text-xs sm:text-sm text-blue-100">SmartzProd - Monitoring Excavator</p>
+							</div>
+						</div>
+						<button
+							id="closeInfoBtn"
+							class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all duration-200 hover:rotate-90 focus:outline-none focus:ring-2 focus:ring-white/50">
+							<i class="fas fa-times text-white text-lg sm:text-xl"></i>
+						</button>
+					</div>
+				</div>
+
+				<!-- Scrollable Content -->
+				<div class="overflow-y-auto flex-1 p-4 sm:p-6 space-y-4 sm:space-y-6">
+					<!-- About Section -->
+					<div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 sm:p-5 border border-blue-200">
+						<div class="flex items-center gap-2 mb-3">
+							<i class="fas fa-book-open text-blue-600 text-lg"></i>
+							<h3 class="text-base sm:text-lg font-bold text-gray-800">Tentang Aplikasi</h3>
+						</div>
+						<p class="text-xs sm:text-sm text-gray-700 leading-relaxed">
+							<strong>SmartzProd</strong> adalah aplikasi monitoring produktivitas excavator dan match factor yang membantu Anda mengoptimalkan efisiensi operasional alat berat. Aplikasi ini menghitung produktivitas
+							berdasarkan ritase dan waktu kerja, serta match factor untuk keseimbangan excavator-hauler.
+						</p>
+					</div>
+
+					<!-- Productivity Calculation -->
+					<div class="border border-gray-200 rounded-xl p-4 sm:p-5">
+						<div class="flex items-center gap-2 mb-3">
+							<i class="fas fa-calculator text-green-600 text-lg"></i>
+							<h3 class="text-base sm:text-lg font-bold text-gray-800">Perhitungan Productivity</h3>
+						</div>
+						<div class="bg-green-50 rounded-lg p-3 sm:p-4 mb-3 border-l-4 border-green-500">
+							<p class="text-xs sm:text-sm font-mono text-green-900 mb-2"><strong>Rumus:</strong> Productivity = Ritase × 60 / Waktu (jam)</p>
+							<div class="text-xs sm:text-sm text-gray-700 space-y-1">
+								<p><strong>• Ritase:</strong> Jumlah trip yang dilakukan excavator</p>
+								<p><strong>• Waktu:</strong> Total jam operasional (dalam jam)</p>
+								<p><strong>• × 60:</strong> Konversi ke ritase per jam</p>
+							</div>
+						</div>
+						<div class="bg-gray-50 rounded-lg p-3 sm:p-4">
+							<p class="text-xs sm:text-sm font-semibold text-gray-700 mb-2">📊 Contoh:</p>
+							<ul class="text-xs sm:text-sm text-gray-600 space-y-1">
+								<li>• Ritase: 120 trip</li>
+								<li>• Waktu: 8 jam</li>
+								<li>• <strong>Productivity = 120 × 60 / 8 = 900 bcm/jam</strong></li>
+							</ul>
+						</div>
+					</div>
+
+					<!-- Match Factor Calculation -->
+					<div class="border border-gray-200 rounded-xl p-4 sm:p-5">
+						<div class="flex items-center gap-2 mb-3">
+							<i class="fas fa-balance-scale text-purple-600 text-lg"></i>
+							<h3 class="text-base sm:text-lg font-bold text-gray-800">Perhitungan Match Factor</h3>
+						</div>
+						<div class="bg-purple-50 rounded-lg p-3 sm:p-4 mb-3 border-l-4 border-purple-500">
+							<p class="text-xs sm:text-sm font-mono text-purple-900 mb-2"><strong>Rumus:</strong> Match Factor = Waktu × 60 / Jumlah HD</p>
+							<div class="text-xs sm:text-sm text-gray-700 space-y-1">
+								<p><strong>• Waktu:</strong> Cycle time excavator (dalam jam)</p>
+								<p><strong>• Jumlah HD:</strong> Jumlah hauler yang digunakan</p>
+								<p><strong>• × 60:</strong> Konversi ke menit per HD</p>
+							</div>
+						</div>
+						<div class="bg-gray-50 rounded-lg p-3 sm:p-4">
+							<p class="text-xs sm:text-sm font-semibold text-gray-700 mb-2">📊 Contoh:</p>
+							<ul class="text-xs sm:text-sm text-gray-600 space-y-1">
+								<li>• Waktu: 8 jam</li>
+								<li>• Jumlah HD: 6 unit</li>
+								<li>• <strong>Match Factor = 8 × 60 / 6 = 80 menit/HD</strong></li>
+							</ul>
+						</div>
+					</div>
+
+					<!-- Status System -->
+					<div class="border border-gray-200 rounded-xl p-4 sm:p-5">
+						<div class="flex items-center gap-2 mb-3">
+							<i class="fas fa-traffic-light text-orange-600 text-lg"></i>
+							<h3 class="text-base sm:text-lg font-bold text-gray-800">Status Match Factor</h3>
+						</div>
+						<p class="text-xs sm:text-sm text-gray-600 mb-3">Status ditampilkan pada chart Match Factor berdasarkan nilai rata-rata:</p>
+
+						<!-- Status Cards -->
+						<div class="space-y-2 sm:space-y-3">
+							<!-- Optimal -->
+							<div class="bg-gradient-to-r from-green-50 to-green-100 border-l-4 border-green-500 rounded-lg p-3">
+								<div class="flex items-center gap-2 mb-1">
+									<div class="w-3 h-3 bg-green-500 rounded-full"></div>
+									<span class="text-xs sm:text-sm font-bold text-green-900">🟢 Optimal</span>
+								</div>
+								<p class="text-xs text-green-800"><strong>Range:</strong> 0.5 ≤ avg ≤ 1.5</p>
+								<p class="text-xs text-green-700">Keseimbangan excavator-hauler bagus ✅</p>
+							</div>
+
+							<!-- Warning -->
+							<div class="bg-gradient-to-r from-yellow-50 to-yellow-100 border-l-4 border-yellow-500 rounded-lg p-3">
+								<div class="flex items-center gap-2 mb-1">
+									<div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+									<span class="text-xs sm:text-sm font-bold text-yellow-900">🟡 Warning</span>
+								</div>
+								<p class="text-xs text-yellow-800"><strong>Range:</strong> avg &lt; 0.5 OR avg &gt; 1.5</p>
+								<p class="text-xs text-yellow-700">Mendekati ketidakseimbangan ⚠️</p>
+							</div>
+
+							<!-- Critical -->
+							<div class="bg-gradient-to-r from-red-50 to-red-100 border-l-4 border-red-500 rounded-lg p-3">
+								<div class="flex items-center gap-2 mb-1">
+									<div class="w-3 h-3 bg-red-500 rounded-full"></div>
+									<span class="text-xs sm:text-sm font-bold text-red-900">🔴 Critical</span>
+								</div>
+								<p class="text-xs text-red-800"><strong>Range:</strong> avg &lt; 0.1 OR avg &gt; 2.0</p>
+								<p class="text-xs text-red-700">Ketidaksesuaian parah - tindakan segera! 🚨</p>
+							</div>
+						</div>
+					</div>
+
+					<!-- Features -->
+					<div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 sm:p-5 border border-gray-200">
+						<div class="flex items-center gap-2 mb-3">
+							<i class="fas fa-star text-yellow-600 text-lg"></i>
+							<h3 class="text-base sm:text-lg font-bold text-gray-800">Fitur Aplikasi</h3>
+						</div>
+						<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm text-gray-700">
+							<div class="flex items-start gap-2">
+								<i class="fas fa-check-circle text-green-500 mt-0.5"></i>
+								<span>Input data Productivity & Match Factor</span>
+							</div>
+							<div class="flex items-start gap-2">
+								<i class="fas fa-check-circle text-green-500 mt-0.5"></i>
+								<span>Visualisasi chart per excavator</span>
+							</div>
+							<div class="flex items-start gap-2">
+								<i class="fas fa-check-circle text-green-500 mt-0.5"></i>
+								<span>Edit & hapus data</span>
+							</div>
+							<div class="flex items-start gap-2">
+								<i class="fas fa-check-circle text-green-500 mt-0.5"></i>
+								<span>Backup & restore database</span>
+							</div>
+							<div class="flex items-start gap-2">
+								<i class="fas fa-check-circle text-green-500 mt-0.5"></i>
+								<span>Status monitoring real-time</span>
+							</div>
+							<div class="flex items-start gap-2">
+								<i class="fas fa-check-circle text-green-500 mt-0.5"></i>
+								<span>Responsive mobile-friendly</span>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Footer -->
+				<div class="bg-gray-50 p-3 sm:p-4 flex-shrink-0 border-t border-gray-200">
+					<div class="flex items-center justify-between">
+						<p class="text-[10px] sm:text-xs text-gray-500">
+							<i class="fas fa-keyboard mr-1"></i>
+							Tekan <kbd class="px-1.5 py-0.5 bg-gray-200 rounded text-gray-600 font-mono text-[9px] sm:text-xs">ESC</kbd> untuk menutup
+						</p>
+						<p class="text-[10px] sm:text-xs text-gray-400">v1.0.0</p>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script src="js/script.js"></script>
+	</body>
+</html>
