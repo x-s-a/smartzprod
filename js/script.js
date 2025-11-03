@@ -394,6 +394,7 @@ const imageStorage = new ImageStorage();
 // Issue Options Data Structure
 // ==========================================
 const DELAY_OPTIONS = {
+  'D0': { label: 'Tidak Ada', sub: [] },
   'D1': { label: 'P2H', sub: [] },
   'D2': {
     label: 'Fuel & Lube', sub: [
@@ -478,6 +479,7 @@ const DELAY_OPTIONS = {
 };
 
 const PRODUCTIVITY_OPTIONS = {
+  '0': { label: 'Tidak Ada', sub: [] },
   '1': {
     label: 'Problem di Front', sub: [
       'Double Bench Loading',
@@ -1036,6 +1038,11 @@ function setupIssueModal() {
   const photoPreview = document.getElementById('issuePhotoPreview');
   const photoRemoveBtn = document.getElementById('issuePhotoRemoveBtn');
 
+  // Follow-up photo elements
+  const followUpPhotoBtn = document.getElementById('followUpPhotoBtn');
+  const followUpPhotoInput = document.getElementById('followUpPhotoInput');
+  const followUpPhotoPreviewContainer = document.getElementById('followUpPhotoPreviewContainer');
+
   // Additional notes
   const additionalNotes = document.getElementById('issueAdditionalNotes');
 
@@ -1047,7 +1054,7 @@ function setupIssueModal() {
     Object.keys(DELAY_OPTIONS).forEach(key => {
       const option = document.createElement('option');
       option.value = key;
-      option.textContent = `${key} - ${DELAY_OPTIONS[key].label}`;
+      option.textContent = key === 'D0' ? 'Tidak Ada' : `${key} - ${DELAY_OPTIONS[key].label}`;
       delayMainCategory.appendChild(option);
     });
   }
@@ -1058,7 +1065,7 @@ function setupIssueModal() {
     Object.keys(PRODUCTIVITY_OPTIONS).forEach(key => {
       const option = document.createElement('option');
       option.value = key;
-      option.textContent = `Category ${key}: ${PRODUCTIVITY_OPTIONS[key].label}`;
+      option.textContent = key === '0' ? 'Tidak Ada' : `Kategori ${key}: ${PRODUCTIVITY_OPTIONS[key].label}`;
       productivityMainCategory.appendChild(option);
     });
   }
@@ -1169,6 +1176,7 @@ function setupIssueModal() {
 
   // Photo Upload Handler - Multiple Photos Support
   let currentPhotoBlobs = []; // Array of { blob: Blob, preview: string }
+  let followUpPhotoBlobs = []; // Array of { blob: Blob, preview: string } for follow-up section
 
   photoBtn.addEventListener('click', function () {
     photoInput.click();
@@ -1533,6 +1541,148 @@ function setupIssueModal() {
     document.addEventListener('keydown', keyHandler);
   }
 
+  // Follow-up Photo Upload Handler - Multiple Photos Support
+  followUpPhotoBtn.addEventListener('click', function () {
+    followUpPhotoInput.click();
+  });
+
+  followUpPhotoInput.addEventListener('change', async function (e) {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    // Process each file
+    for (const file of files) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        showAlert(`File "${file.name}" bukan gambar, dilewati!`, 'warning');
+        continue;
+      }
+
+      // Validate file size (max 5MB per file)
+      if (file.size > 5 * 1024 * 1024) {
+        showAlert(`File "${file.name}" terlalu besar (max 5MB), dilewati!`, 'warning');
+        continue;
+      }
+
+      try {
+        // Read and compress image
+        const compressedBlob = await compressImage(file);
+        const previewUrl = URL.createObjectURL(compressedBlob);
+
+        // Add to follow-up photos
+        followUpPhotoBlobs.push({
+          blob: compressedBlob,
+          preview: previewUrl,
+          name: file.name
+        });
+
+        // Show compression info
+        const originalSize = (file.size / 1024).toFixed(2);
+        const compressedSize = (compressedBlob.size / 1024).toFixed(2);
+        console.log(`📸 Follow-up image compressed: ${file.name} ${originalSize}KB → ${compressedSize}KB`);
+      } catch (error) {
+        console.error('Failed to compress image:', error);
+        showAlert(`Gagal memproses gambar "${file.name}"`, 'error');
+      }
+    }
+
+    // Update preview
+    updateFollowUpPhotoPreview();
+
+    // Clear input to allow re-selecting the same files
+    followUpPhotoInput.value = '';
+  });
+
+  /**
+   * Update follow-up photo preview grid
+   */
+  function updateFollowUpPhotoPreview() {
+    const grid = document.getElementById('followUpPhotoPreviewGrid');
+    const badge = document.getElementById('followUpPhotoCountBadge');
+
+    if (followUpPhotoBlobs.length === 0) {
+      followUpPhotoPreviewContainer.classList.add('hidden');
+      badge.classList.add('hidden');
+      grid.innerHTML = '';
+      return;
+    }
+
+    followUpPhotoPreviewContainer.classList.remove('hidden');
+    badge.classList.remove('hidden');
+    badge.textContent = followUpPhotoBlobs.length;
+
+    // Clear grid
+    grid.innerHTML = '';
+
+    // Add each photo preview
+    followUpPhotoBlobs.forEach((photo, index) => {
+      const previewItem = document.createElement('div');
+      previewItem.className = 'relative bg-gray-50 rounded-lg overflow-hidden border-2 border-blue-200 group';
+      previewItem.innerHTML = `
+        <img src="${photo.preview}" alt="Preview ${index + 1}" class="w-full h-32 object-cover cursor-pointer hover:opacity-90 transition-opacity" data-lightbox-index="${index}" />
+        <button
+          type="button"
+          data-index="${index}"
+          class="followup-photo-remove-btn absolute top-2 right-2 w-8 h-8 min-w-[2rem] min-h-[2rem] bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-all shadow-lg opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95 flex-shrink-0"
+          style="aspect-ratio: 1/1;">
+          <i class="fas fa-times text-xs"></i>
+        </button>
+        <div class="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs px-2 py-1 truncate">
+          ${(photo.blob.size / 1024).toFixed(1)}KB
+        </div>
+      `;
+      grid.appendChild(previewItem);
+    });
+
+    // Add remove button listeners
+    grid.querySelectorAll('.followup-photo-remove-btn').forEach(btn => {
+      btn.addEventListener('click', function () {
+        const index = parseInt(this.dataset.index);
+        removeFollowUpPhoto(index);
+      });
+    });
+
+    // Add lightbox click listeners to images
+    grid.querySelectorAll('img[data-lightbox-index]').forEach(img => {
+      img.addEventListener('click', function () {
+        const index = parseInt(this.dataset.lightboxIndex);
+        openPhotoLightbox(index, followUpPhotoBlobs);
+      });
+    });
+  }
+
+  /**
+   * Remove a follow-up photo from the list
+   * @param {number} index - Photo index
+   */
+  function removeFollowUpPhoto(index) {
+    if (index >= 0 && index < followUpPhotoBlobs.length) {
+      // Revoke object URL to free memory
+      URL.revokeObjectURL(followUpPhotoBlobs[index].preview);
+
+      // Remove from array
+      followUpPhotoBlobs.splice(index, 1);
+
+      // Update preview
+      updateFollowUpPhotoPreview();
+    }
+  }
+
+  /**
+   * Set current follow-up photo blobs (for editing)
+   * @param {Array} photos - Array of photo objects
+   */
+  window.setFollowUpPhotoBlobs = function (photos) {
+    // Clear existing photos
+    followUpPhotoBlobs.forEach(photo => {
+      URL.revokeObjectURL(photo.preview);
+    });
+
+    // Set new photos
+    followUpPhotoBlobs = photos;
+    updateFollowUpPhotoPreview();
+  };
+
   // Open Modal
   function openIssueModal(preSelectedExcavator = null) {
     populateDelayOptions();
@@ -1606,6 +1756,13 @@ function setupIssueModal() {
     currentPhotoBlobs = [];
     updatePhotoPreview();
 
+    // Clear follow-up photos
+    followUpPhotoBlobs.forEach(photo => {
+      URL.revokeObjectURL(photo.preview); // Free memory
+    });
+    followUpPhotoBlobs = [];
+    updateFollowUpPhotoPreview();
+
     additionalNotes.value = '';
     document.getElementById('followUpNotes').value = '';
   }
@@ -1639,7 +1796,7 @@ function setupIssueModal() {
       return;
     }
 
-    // Validation: All four sections (1, 2, 3, 4) are now REQUIRED
+    // Validation: Sections 1 and 2 are REQUIRED, sections 3 and 4 are OPTIONAL
     if (!delayMain) {
       showAlert('Section 1 (Delay Problem) wajib diisi!', 'error');
       return;
@@ -1647,16 +1804,6 @@ function setupIssueModal() {
 
     if (!productivityMain) {
       showAlert('Section 2 (Productivity Problem) wajib diisi!', 'error');
-      return;
-    }
-
-    if (currentPhotoBlobs.length === 0) {
-      showAlert('Section 3 (Dokumentasi Masalah) wajib diisi! Minimal 1 foto.', 'error');
-      return;
-    }
-
-    if (!followUpNotes) {
-      showAlert('Section 4 (Follow Up Perbaikan) wajib diisi!', 'error');
       return;
     }
 
@@ -1677,11 +1824,22 @@ function setupIssueModal() {
         }
       }
 
+      // Delete old follow-up photos from IndexedDB if they exist
+      if (issue.followUpImageIds && issue.followUpImageIds.length > 0) {
+        try {
+          await imageStorage.deleteImages(issue.followUpImageIds);
+          console.log(`✅ Deleted old follow-up photos from IndexedDB for issue ${issue.id}`);
+        } catch (error) {
+          console.warn('Failed to delete old follow-up photos:', error);
+        }
+      }
+
       // Keep the original ID, but update timestamp if datetime changed
       const selectedDateTime = new Date(selectedDate);
       issue.excavator = excavator;
       issue.timestamp = selectedDateTime.toISOString(); // Update timestamp with selected datetime
       issue.imageIds = [];
+      issue.followUpImageIds = [];
       issue.notes = notes;
       issue.followUpNotes = followUpNotes;
     } else {
@@ -1698,6 +1856,7 @@ function setupIssueModal() {
         delay: null,
         productivity: null,
         imageIds: [], // Store image IDs instead of base64
+        followUpImageIds: [], // Store follow-up image IDs
         notes: notes,
         followUpNotes: followUpNotes
       };
@@ -1751,6 +1910,23 @@ function setupIssueModal() {
       }
     }
 
+    // Store follow-up photos in IndexedDB
+    if (followUpPhotoBlobs.length > 0) {
+      try {
+        showAlert(`Menyimpan ${followUpPhotoBlobs.length} foto follow-up ke IndexedDB...`, 'info');
+
+        for (const photoData of followUpPhotoBlobs) {
+          const imageId = await imageStorage.storeImage(photoData.blob, issue.id.toString() + '_followup');
+          issue.followUpImageIds.push(imageId);
+        }
+
+        console.log(`✅ Stored ${followUpPhotoBlobs.length} follow-up photos in IndexedDB for issue ${issue.id}`);
+      } catch (error) {
+        console.error('Failed to store follow-up photos:', error);
+        showAlert('Gagal menyimpan foto follow-up! Data issue tetap disimpan.', 'warning');
+      }
+    }
+
     // Save to AppState
     if (!isEditing) {
       AppState.issuesData.push(issue);
@@ -1759,7 +1935,8 @@ function setupIssueModal() {
 
     saveToLocalStorage();
 
-    const photoMsg = issue.imageIds.length > 0 ? ` dengan ${issue.imageIds.length} foto` : '';
+    const totalPhotos = issue.imageIds.length + (issue.followUpImageIds?.length || 0);
+    const photoMsg = totalPhotos > 0 ? ` dengan ${totalPhotos} foto` : '';
     const action = isEditing ? 'diperbarui' : 'disimpan';
     showAlert(`Catatan problem${photoMsg} berhasil ${action}!`, 'success');
 
@@ -2161,7 +2338,7 @@ function renderProductivityTable(filteredData = null) {
   if (data.length === 0) {
     tbody.innerHTML = `
       <tr class="empty-state">
-        <td colspan="11" class="px-6 py-12 text-center">
+        <td colspan="12" class="px-6 py-12 text-center">
           <div class="flex flex-col items-center justify-center">
             <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
               <i class="fas fa-inbox text-gray-400 text-2xl"></i>
@@ -2179,6 +2356,10 @@ function renderProductivityTable(filteredData = null) {
     const row = document.createElement('tr');
     // Add zebra striping and hover effects
     row.className = 'hover:bg-blue-50 transition-colors duration-150 even:bg-gray-50 group fade-in';
+
+    // Calculate delay: 60 x (HM Akhir - HM Awal)
+    const delay = 60 * (parseFloat(item.hmAkhir) - parseFloat(item.hmAwal));
+
     row.innerHTML = `
             <td class="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap text-sm font-medium text-gray-900">${index + 1}</td>
             <td class="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-700">${item.namaPengawas}</td>
@@ -2199,6 +2380,7 @@ function renderProductivityTable(filteredData = null) {
             <td class="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-700 text-right">${parseFloat(item.hmAkhir).toFixed(2)}</td>
             <td class="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-700 text-right">${parseFloat(item.kapasitas).toFixed(2)}</td>
             <td class="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap text-sm font-bold text-blue-600 text-right">${parseFloat(item.productivity).toFixed(2)}</td>
+            <td class="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap text-sm font-semibold text-orange-600 text-right">${delay.toFixed(2)}</td>
             <td class="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap text-center">
                 <div class="flex items-center justify-center gap-1.5 sm:gap-2">
                     <!-- Edit Button -->
@@ -2525,8 +2707,11 @@ function renderIssuesTable(filteredData = null) {
     }
 
     // Photo indicator - Use original index from AppState
-    const photoCount = (issue.imageIds && issue.imageIds.length > 0) ? issue.imageIds.length :
+    // Count photos from both sections (Dokumentasi Masalah + Follow Up Perbaikan)
+    const documentationPhotoCount = (issue.imageIds && issue.imageIds.length > 0) ? issue.imageIds.length :
       (issue.photo ? 1 : 0); // Support legacy base64 photos
+    const followUpPhotoCount = (issue.followUpImageIds && issue.followUpImageIds.length > 0) ? issue.followUpImageIds.length : 0;
+    const photoCount = documentationPhotoCount + followUpPhotoCount;
 
     const photoHtml = photoCount > 0
       ? `<button 
@@ -2603,22 +2788,39 @@ window.viewIssuePhotos = async function (index) {
   const issue = AppState.issuesData[index];
   if (!issue) return;
 
-  // Get photos - support both new imageIds and legacy base64 photo
+  // Get photos from both sections - support both new imageIds and legacy base64 photo
   let photoUrls = [];
+  let photoSections = []; // Track which section each photo belongs to
 
+  // Section 1: Dokumentasi Masalah (Purple)
   if (issue.imageIds && issue.imageIds.length > 0) {
     // New: Load from IndexedDB
     try {
       const images = await imageStorage.getImages(issue.imageIds);
-      photoUrls = images.map(img => URL.createObjectURL(img.blob));
+      const urls = images.map(img => URL.createObjectURL(img.blob));
+      photoUrls.push(...urls);
+      photoSections.push(...urls.map(() => ({ type: 'documentation', label: 'Dokumentasi Masalah', color: 'purple' })));
     } catch (error) {
       console.error('Failed to load images from IndexedDB:', error);
-      showAlert('Gagal memuat foto dari penyimpanan', 'error');
-      return;
+      showAlert('Gagal memuat foto dokumentasi dari penyimpanan', 'error');
     }
   } else if (issue.photo) {
     // Legacy: base64 photo
-    photoUrls = [issue.photo];
+    photoUrls.push(issue.photo);
+    photoSections.push({ type: 'documentation', label: 'Dokumentasi Masalah', color: 'purple' });
+  }
+
+  // Section 2: Follow Up Perbaikan (Blue)
+  if (issue.followUpImageIds && issue.followUpImageIds.length > 0) {
+    try {
+      const images = await imageStorage.getImages(issue.followUpImageIds);
+      const urls = images.map(img => URL.createObjectURL(img.blob));
+      photoUrls.push(...urls);
+      photoSections.push(...urls.map(() => ({ type: 'followup', label: 'Follow Up Perbaikan', color: 'blue' })));
+    } catch (error) {
+      console.error('Failed to load follow-up images from IndexedDB:', error);
+      showAlert('Gagal memuat foto follow-up dari penyimpanan', 'error');
+    }
   }
 
   if (photoUrls.length === 0) {
@@ -2634,6 +2836,15 @@ window.viewIssuePhotos = async function (index) {
 
   function renderPhoto() {
     const totalPhotos = photoUrls.length;
+    const currentSection = photoSections[currentPhotoIndex] || { type: 'documentation', label: 'Dokumentasi Masalah', color: 'purple' };
+
+    // Section badge colors
+    const badgeColor = currentSection.color === 'blue'
+      ? 'bg-blue-500/90 text-white'
+      : 'bg-purple-500/90 text-white';
+
+    // Section icon
+    const badgeIcon = currentSection.color === 'blue' ? 'tools' : 'file-alt';
 
     photoModal.innerHTML = `
       <div class="relative w-full h-full flex flex-col">
@@ -2649,6 +2860,13 @@ window.viewIssuePhotos = async function (index) {
               ${new Date(issue.timestamp).toLocaleString('id-ID')}
               ${totalPhotos > 1 ? ` • <span id="photoCounter">${currentPhotoIndex + 1}</span> / ${totalPhotos}` : ''}
             </p>
+            <!-- Section Badge -->
+            <div class="mt-2">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${badgeColor}">
+                <i class="fas fa-${badgeIcon} text-[10px]"></i>
+                ${currentSection.label}
+              </span>
+            </div>
           </div>
           <button
             id="closePhotoModal"
@@ -2745,6 +2963,26 @@ window.viewIssuePhotos = async function (index) {
     const counter = photoModal.querySelector('#photoCounter');
     const prevBtn = photoModal.querySelector('#prevPhotoBtn');
     const nextBtn = photoModal.querySelector('#nextPhotoBtn');
+
+    // Get current section and update badge
+    const currentSection = photoSections[currentPhotoIndex] || { type: 'documentation', label: 'Dokumentasi Masalah', color: 'purple' };
+    const badge = photoModal.querySelector('span.inline-flex.items-center');
+
+    // Update badge color and content
+    if (badge) {
+      // Remove old color classes
+      badge.classList.remove('bg-purple-500/90', 'bg-blue-500/90');
+      // Add new color
+      if (currentSection.color === 'blue') {
+        badge.classList.add('bg-blue-500/90');
+      } else {
+        badge.classList.add('bg-purple-500/90');
+      }
+
+      // Update icon and text - use correct icon names without fa- prefix in template literal
+      const iconClass = currentSection.color === 'blue' ? 'tools' : 'file-alt';
+      badge.innerHTML = `<i class="fas fa-${iconClass} text-[10px]"></i> ${currentSection.label}`;
+    }
 
     if (img) {
       img.src = photoUrls[currentPhotoIndex];
@@ -2989,7 +3227,7 @@ window.editIssue = async function (index) {
   if (issue.notes) additionalNotes.value = issue.notes;
   if (issue.followUpNotes) followUpNotes.value = issue.followUpNotes;
 
-  // Load existing photos
+  // Load existing photos from Dokumentasi Masalah (Section 3)
   if (issue.imageIds && issue.imageIds.length > 0) {
     try {
       const images = await imageStorage.getImages(issue.imageIds);
@@ -2998,7 +3236,7 @@ window.editIssue = async function (index) {
       const photoBlobs = images.map(img => ({
         blob: img.blob,
         preview: URL.createObjectURL(img.blob),
-        name: `Image ${images.indexOf(img) + 1}.jpg`
+        name: `Doctn ${images.indexOf(img) + 1}.jpg`
       }));
 
       // Set current photo blobs (this should be in the modal setup scope)
@@ -3008,6 +3246,27 @@ window.editIssue = async function (index) {
       }
     } catch (error) {
       console.error('Failed to load existing photos:', error);
+    }
+  }
+
+  // Load existing photos from Follow Up Perbaikan (Section 4)
+  if (issue.followUpImageIds && issue.followUpImageIds.length > 0) {
+    try {
+      const images = await imageStorage.getImages(issue.followUpImageIds);
+
+      // Convert to photo blobs format for preview
+      const photoBlobs = images.map(img => ({
+        blob: img.blob,
+        preview: URL.createObjectURL(img.blob),
+        name: `Follow-up ${images.indexOf(img) + 1}.jpg`
+      }));
+
+      // Set follow-up photo blobs
+      if (window.setFollowUpPhotoBlobs) {
+        window.setFollowUpPhotoBlobs(photoBlobs);
+      }
+    } catch (error) {
+      console.error('Failed to load existing follow-up photos:', error);
     }
   }
 
@@ -4210,14 +4469,17 @@ async function exportToExcel(type) {
         { header: 'HM Akhir', key: 'hmAkhir', width: 10 },
         { header: 'Durasi (Jam)', key: 'durasi', width: 12 },
         { header: 'Kapasitas (BCM)', key: 'kapasitas', width: 15 },
-        { header: 'Productivity (BCM/Jam)', key: 'productivity', width: 20 }
+        { header: 'Productivity (BCM/Jam)', key: 'productivity', width: 20 },
+        { header: 'Delay (Menit)', key: 'delay', width: 15 }
       ];
 
       data.forEach((item, index) => {
+        const delay = 60 * (parseFloat(item.hmAkhir) - parseFloat(item.hmAwal));
         dataSheet.addRow({
           no: index + 1,
           ...item,
-          waktu: formatDateTime(item.waktu)
+          waktu: formatDateTime(item.waktu),
+          delay: delay.toFixed(2)
         });
       });
     } else {
@@ -4249,6 +4511,11 @@ async function exportToExcel(type) {
       pattern: 'solid',
       fgColor: { argb: type === 'productivity' ? 'FF4472C4' : 'FF9333EA' }
     };
+
+    // Set all cells in dataSheet to left align
+    dataSheet.columns.forEach(col => {
+      col.alignment = { horizontal: 'left', vertical: 'middle' };
+    });
 
     // Sheet 2: Chart Analysis Summary with Images
     const chartSheet = workbook.addWorksheet(type === 'productivity' ? 'Productivity Trend' : 'Match Factor Analysis');
@@ -4283,6 +4550,11 @@ async function exportToExcel(type) {
       pattern: 'solid',
       fgColor: { argb: type === 'productivity' ? 'FF4472C4' : 'FF9333EA' }
     };
+
+    // Set all cells in chartSheet to left align
+    chartSheet.columns.forEach(col => {
+      col.alignment = { horizontal: 'left', vertical: 'middle' };
+    });
 
     // Add chart images
     let currentRow = chartSheet.rowCount + 3;
@@ -4335,16 +4607,20 @@ async function exportToExcel(type) {
         { header: 'Productivity Problem', key: 'productivityProblem', width: 40 },
         { header: 'Dokumentasi Masalah', key: 'catatan', width: 45 },
         { header: 'Follow Up Perbaikan', key: 'catatanLanjutan', width: 45 },
-        { header: 'Foto', key: 'photos', width: 20 }
+        { header: 'Foto Dokumentasi', key: 'photos', width: 20 },
+        { header: 'Foto Follow Up', key: 'followUpPhotos', width: 20 }
       ];
 
-      // Set consistent width for all photo columns (H onwards) - wide enough to prevent overlap
-      for (let col = 8; col <= 20; col++) { // Columns I through U for additional photos
+      // Set consistent width for all photo columns (I onwards) - wide enough to prevent overlap
+      for (let col = 9; col <= 30; col++) { // Extended range for both photo types
         issueSheet.getColumn(col).width = 20;
       }
 
-      for (let index = 0; index < AppState.issuesData.length; index++) {
-        const issue = AppState.issuesData[index];
+      // Sort issues by timestamp (newest first) - consistent with web dashboard
+      const sortedIssues = [...AppState.issuesData].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      for (let index = 0; index < sortedIssues.length; index++) {
+        const issue = sortedIssues[index];
 
         // Build Delay Problem text with full labels
         let delayText = '-';
@@ -4378,14 +4654,15 @@ async function exportToExcel(type) {
           productivityProblem: prodText,
           catatan: issue.notes || '-',
           catatanLanjutan: issue.followUpNotes || '-',
-          photos: issue.imageIds && issue.imageIds.length > 0 ? `${issue.imageIds.length} foto` : 'Tidak ada foto'
+          photos: issue.imageIds && issue.imageIds.length > 0 ? `${issue.imageIds.length} foto` : 'Tidak ada foto',
+          followUpPhotos: issue.followUpImageIds && issue.followUpImageIds.length > 0 ? `${issue.followUpImageIds.length} foto` : 'Tidak ada foto'
         }).number;
 
-        // Add ALL photos in a horizontal line - one photo per column, starting from column I
+        // Add Dokumentasi Masalah photos in a horizontal line - one photo per column, starting from column J
         if (issue.imageIds && issue.imageIds.length > 0) {
-          const photoHeight = 90; // Good size - not too small, not too large
-          const startCol = 8; // Column I (next to "Foto" column H) - 0-indexed
-          const currentRow = rowIndex - 1; // Excel uses 0-indexed rows
+          const photoHeight = 90;
+          const startCol = 9; // Column J (next to "Foto Dokumentasi" column I) - 0-indexed
+          const currentRow = rowIndex - 1;
 
           // Set row height to accommodate photos perfectly
           issueSheet.getRow(rowIndex).height = 70;
@@ -4397,7 +4674,6 @@ async function exportToExcel(type) {
               if (photoData && photoData.blob) {
                 const base64 = await imageStorage.blobToBase64(photoData.blob);
 
-                // Create temporary image to get ACTUAL dimensions
                 const img = new Image();
                 img.src = base64;
                 await new Promise(resolve => img.onload = resolve);
@@ -4431,6 +4707,61 @@ async function exportToExcel(type) {
             }
           }
         }
+
+        // Add Follow Up Perbaikan photos - continue in columns after dokumentasi photos
+        if (issue.followUpImageIds && issue.followUpImageIds.length > 0) {
+          const photoHeight = 90;
+          // Calculate start column: base column (9) + number of dokumentasi photos
+          const dokPhotoCount = issue.imageIds ? issue.imageIds.length : 0;
+          const startCol = 9 + dokPhotoCount; // Start after dokumentasi photos
+          const currentRow = rowIndex - 1;
+
+          // Ensure row height is sufficient
+          if (issueSheet.getRow(rowIndex).height < 70) {
+            issueSheet.getRow(rowIndex).height = 70;
+          }
+
+          for (let photoIndex = 0; photoIndex < issue.followUpImageIds.length; photoIndex++) {
+            try {
+              const photoData = await imageStorage.getImage(issue.followUpImageIds[photoIndex]);
+              if (photoData && photoData.blob) {
+                const base64 = await imageStorage.blobToBase64(photoData.blob);
+
+                const img = new Image();
+                img.src = base64;
+                await new Promise(resolve => img.onload = resolve);
+
+                const aspectRatio = img.width / img.height;
+                let photoWidth = photoHeight * aspectRatio;
+
+                // Prevent overly wide photos
+                if (photoWidth > 120) {
+                  photoWidth = 120;
+                }
+
+                const imageId = workbook.addImage({
+                  base64: base64,
+                  extension: 'jpeg',
+                });
+
+                issueSheet.addImage(imageId, {
+                  tl: {
+                    col: startCol + photoIndex,
+                    row: currentRow,
+                    colOff: 5,
+                    rowOff: 5
+                  },
+                  ext: {
+                    width: photoWidth,
+                    height: photoHeight
+                  }
+                });
+              }
+            } catch (err) {
+              console.warn(`Could not load follow-up photo ${issue.followUpImageIds[photoIndex]}:`, err);
+            }
+          }
+        }
       }
 
       issueSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -4439,6 +4770,11 @@ async function exportToExcel(type) {
         pattern: 'solid',
         fgColor: { argb: 'FFFF6B6B' }
       };
+
+      // Set all cells in issueSheet to left align
+      issueSheet.columns.forEach(col => {
+        col.alignment = { horizontal: 'left', vertical: 'middle' };
+      });
     }
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -4506,20 +4842,24 @@ async function exportToPDF(type) {
     let headers = [];
 
     if (type === 'productivity') {
-      headers = [['No', 'Pengawas', 'NRP', 'Waktu', 'No Excavator', 'Ritase', 'HM Awal', 'HM Akhir', 'Durasi (Jam)', 'Kapasitas (BCM)', 'Productivity (BCM/Jam)']];
-      tableData = data.map((item, index) => [
-        index + 1,
-        item.namaPengawas,
-        item.nrp,
-        formatDateTime(item.waktu),
-        item.noExcavator,
-        item.jumlahRitase,
-        item.hmAwal,
-        item.hmAkhir,
-        item.durasi,
-        item.kapasitas,
-        item.productivity
-      ]);
+      headers = [['No', 'Pengawas', 'NRP', 'Waktu', 'No Excavator', 'Ritase', 'HM Awal', 'HM Akhir', 'Durasi (Jam)', 'Kapasitas (BCM)', 'Productivity (BCM/Jam)', 'Delay (Menit)']];
+      tableData = data.map((item, index) => {
+        const delay = 60 * (parseFloat(item.hmAkhir) - parseFloat(item.hmAwal));
+        return [
+          index + 1,
+          item.namaPengawas,
+          item.nrp,
+          formatDateTime(item.waktu),
+          item.noExcavator,
+          item.jumlahRitase,
+          item.hmAwal,
+          item.hmAkhir,
+          item.durasi,
+          item.kapasitas,
+          item.productivity,
+          delay.toFixed(2)
+        ];
+      });
     } else {
       headers = [['No', 'Pengawas', 'NRP', 'Waktu', 'No Excavator', 'Jml HD', 'CT Hauler (min)', 'CT Loader (min)', 'Match Factor']];
       tableData = data.map((item, index) => [
@@ -4643,8 +4983,11 @@ async function exportToPDF(type) {
       doc.text('3. Issue Log', 14, yPos);
       yPos += 5;
 
+      // Sort issues by timestamp (newest first) - consistent with web dashboard
+      const sortedIssues = [...AppState.issuesData].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
       const issueHeaders = [['No', 'Waktu', 'Excavator', 'Delay Problem', 'Productivity Problem', 'Dokumentasi Masalah', 'Follow Up Perbaikan']];
-      const issueTableData = AppState.issuesData.map((issue, index) => {
+      const issueTableData = sortedIssues.map((issue, index) => {
         // Build Delay Problem text with full labels
         let delayText = '-';
         if (issue.delay) {
@@ -4710,10 +5053,11 @@ async function exportToPDF(type) {
 
       yPos = doc.lastAutoTable.finalY + 10;
 
-      // Add issue photos
-      for (let index = 0; index < AppState.issuesData.length; index++) {
-        const issue = AppState.issuesData[index];
+      // Add issue photos (both Dokumentasi and Follow-up)
+      for (let index = 0; index < sortedIssues.length; index++) {
+        const issue = sortedIssues[index];
 
+        // Process Dokumentasi Masalah photos
         if (issue.imageIds && issue.imageIds.length > 0) {
           const maxPhotoSize = 45; // Max size in mm
           const pageWidth = doc.internal.pageSize.getWidth();
@@ -4729,7 +5073,7 @@ async function exportToPDF(type) {
 
           doc.setFontSize(9);
           doc.setFont(undefined, 'bold');
-          doc.text(`Issue #${index + 1} - ${issue.excavator} - Dokumentasi (${issue.imageIds.length} foto)`, margin, yPos);
+          doc.text(`Issue #${index + 1} - ${issue.excavator} - Dokumentasi Masalah (${issue.imageIds.length} foto)`, margin, yPos);
           yPos += 8;
 
           let xPos = margin;
@@ -4823,6 +5167,103 @@ async function exportToPDF(type) {
             yPos += 5;
           }
         }
+
+        // Process Follow Up Perbaikan photos
+        if (issue.followUpImageIds && issue.followUpImageIds.length > 0) {
+          const maxPhotoSize = 45;
+          const pageWidth = doc.internal.pageSize.getWidth();
+          const pageHeight = doc.internal.pageSize.getHeight();
+          const margin = 14;
+          const bottomMargin = 20;
+
+          // Start follow-up header
+          if (yPos > pageHeight - bottomMargin - 15) {
+            doc.addPage();
+            yPos = 15;
+          }
+
+          doc.setFontSize(9);
+          doc.setFont(undefined, 'bold');
+          doc.text(`Issue #${index + 1} - ${issue.excavator} - Follow Up Perbaikan (${issue.followUpImageIds.length} foto)`, margin, yPos);
+          yPos += 8;
+
+          let xPos = margin;
+          let photosInCurrentRow = 0;
+          const photosPerRow = 4;
+          let maxHeightInCurrentRow = 0;
+
+          for (let photoIndex = 0; photoIndex < issue.followUpImageIds.length; photoIndex++) {
+            try {
+              const photoData = await imageStorage.getImage(issue.followUpImageIds[photoIndex]);
+              if (photoData && photoData.blob) {
+                const base64 = await imageStorage.blobToBase64(photoData.blob);
+
+                const img = new Image();
+                img.src = base64;
+                await new Promise(resolve => img.onload = resolve);
+
+                const aspectRatio = img.width / img.height;
+                let photoWidth, photoHeight;
+                if (aspectRatio > 1) {
+                  photoWidth = maxPhotoSize;
+                  photoHeight = maxPhotoSize / aspectRatio;
+                } else {
+                  photoHeight = maxPhotoSize;
+                  photoWidth = maxPhotoSize * aspectRatio;
+                }
+
+                maxHeightInCurrentRow = Math.max(maxHeightInCurrentRow, photoHeight);
+
+                if (yPos + photoHeight > pageHeight - bottomMargin) {
+                  doc.addPage();
+                  yPos = 15;
+                  xPos = margin;
+                  photosInCurrentRow = 0;
+                  maxHeightInCurrentRow = photoHeight;
+                }
+
+                if (photosInCurrentRow > 0 && xPos + maxPhotoSize + 5 > pageWidth - margin) {
+                  yPos += maxHeightInCurrentRow + 5;
+                  xPos = margin;
+                  photosInCurrentRow = 0;
+                  maxHeightInCurrentRow = photoHeight;
+
+                  if (yPos + photoHeight > pageHeight - bottomMargin) {
+                    doc.addPage();
+                    yPos = 15;
+                  }
+                }
+
+                doc.setFillColor(255, 255, 255);
+                doc.rect(xPos, yPos, photoWidth, photoHeight, 'F');
+
+                doc.setDrawColor(200, 200, 200);
+                doc.setLineWidth(0.5);
+                doc.rect(xPos, yPos, photoWidth, photoHeight);
+
+                doc.addImage(base64, 'JPEG', xPos + 1, yPos + 1, photoWidth - 2, photoHeight - 2);
+
+                xPos += maxPhotoSize + 5;
+                photosInCurrentRow++;
+
+                if (photosInCurrentRow >= photosPerRow && photoIndex < issue.followUpImageIds.length - 1) {
+                  yPos += maxHeightInCurrentRow + 5;
+                  xPos = margin;
+                  photosInCurrentRow = 0;
+                  maxHeightInCurrentRow = 0;
+                }
+              }
+            } catch (err) {
+              console.warn(`Could not load follow-up photo ${issue.followUpImageIds[photoIndex]}:`, err);
+            }
+          }
+
+          if (photosInCurrentRow > 0) {
+            yPos += maxHeightInCurrentRow + 10;
+          } else {
+            yPos += 5;
+          }
+        }
       }
     }
 
@@ -4892,20 +5333,24 @@ async function sharePDFToWhatsApp(type) {
     let headers = [];
 
     if (type === 'productivity') {
-      headers = [['No', 'Pengawas', 'NRP', 'Waktu', 'No Excavator', 'Ritase', 'HM Awal', 'HM Akhir', 'Durasi (Jam)', 'Kapasitas (BCM)', 'Productivity (BCM/Jam)']];
-      tableData = data.map((item, index) => [
-        index + 1,
-        item.namaPengawas,
-        item.nrp,
-        formatDateTime(item.waktu),
-        item.noExcavator,
-        item.jumlahRitase,
-        item.hmAwal,
-        item.hmAkhir,
-        item.durasi,
-        item.kapasitas,
-        item.productivity
-      ]);
+      headers = [['No', 'Pengawas', 'NRP', 'Waktu', 'No Excavator', 'Ritase', 'HM Awal', 'HM Akhir', 'Durasi (Jam)', 'Kapasitas (BCM)', 'Productivity (BCM/Jam)', 'Delay (Menit)']];
+      tableData = data.map((item, index) => {
+        const delay = 60 * (parseFloat(item.hmAkhir) - parseFloat(item.hmAwal));
+        return [
+          index + 1,
+          item.namaPengawas,
+          item.nrp,
+          formatDateTime(item.waktu),
+          item.noExcavator,
+          item.jumlahRitase,
+          item.hmAwal,
+          item.hmAkhir,
+          item.durasi,
+          item.kapasitas,
+          item.productivity,
+          delay.toFixed(2)
+        ];
+      });
     } else {
       headers = [['No', 'Pengawas', 'NRP', 'Waktu', 'No Excavator', 'Jml HD', 'CT Hauler (min)', 'CT Loader (min)', 'Match Factor']];
       tableData = data.map((item, index) => [
@@ -5029,8 +5474,11 @@ async function sharePDFToWhatsApp(type) {
       doc.text('3. Issue Log', 14, yPos);
       yPos += 5;
 
+      // Sort issues by timestamp (newest first) - consistent with web dashboard
+      const sortedIssues = [...AppState.issuesData].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
       const issueHeaders = [['No', 'Waktu', 'Excavator', 'Delay Problem', 'Productivity Problem', 'Dokumentasi Masalah', 'Follow Up Perbaikan']];
-      const issueTableData = AppState.issuesData.map((issue, index) => {
+      const issueTableData = sortedIssues.map((issue, index) => {
         let delayText = '-';
         if (issue.delay) {
           const { mainCode, mainLabel, subCode, subLabel, customText } = issue.delay;
@@ -5094,10 +5542,11 @@ async function sharePDFToWhatsApp(type) {
 
       yPos = doc.lastAutoTable.finalY + 10;
 
-      // Add issue photos
-      for (let index = 0; index < AppState.issuesData.length; index++) {
-        const issue = AppState.issuesData[index];
+      // Add issue photos (both Dokumentasi and Follow-up)
+      for (let index = 0; index < sortedIssues.length; index++) {
+        const issue = sortedIssues[index];
 
+        // Process Dokumentasi Masalah photos
         if (issue.imageIds && issue.imageIds.length > 0) {
           const maxPhotoSize = 45;
           const pageWidth = doc.internal.pageSize.getWidth();
@@ -5112,7 +5561,7 @@ async function sharePDFToWhatsApp(type) {
 
           doc.setFontSize(9);
           doc.setFont(undefined, 'bold');
-          doc.text(`Issue #${index + 1} - ${issue.excavator} - Dokumentasi (${issue.imageIds.length} foto)`, margin, yPos);
+          doc.text(`Issue #${index + 1} - ${issue.excavator} - Dokumentasi Masalah (${issue.imageIds.length} foto)`, margin, yPos);
           yPos += 8;
 
           let xPos = margin;
@@ -5192,6 +5641,102 @@ async function sharePDFToWhatsApp(type) {
             yPos += 5;
           }
         }
+
+        // Process Follow Up Perbaikan photos
+        if (issue.followUpImageIds && issue.followUpImageIds.length > 0) {
+          const maxPhotoSize = 45;
+          const pageWidth = doc.internal.pageSize.getWidth();
+          const pageHeight = doc.internal.pageSize.getHeight();
+          const margin = 14;
+          const bottomMargin = 20;
+
+          if (yPos > pageHeight - bottomMargin - 15) {
+            doc.addPage();
+            yPos = 15;
+          }
+
+          doc.setFontSize(9);
+          doc.setFont(undefined, 'bold');
+          doc.text(`Issue #${index + 1} - ${issue.excavator} - Follow Up Perbaikan (${issue.followUpImageIds.length} foto)`, margin, yPos);
+          yPos += 8;
+
+          let xPos = margin;
+          let photosInCurrentRow = 0;
+          const photosPerRow = 4;
+          let maxHeightInCurrentRow = 0;
+
+          for (let photoIndex = 0; photoIndex < issue.followUpImageIds.length; photoIndex++) {
+            try {
+              const photoData = await imageStorage.getImage(issue.followUpImageIds[photoIndex]);
+              if (photoData && photoData.blob) {
+                const base64 = await imageStorage.blobToBase64(photoData.blob);
+
+                const img = new Image();
+                img.src = base64;
+                await new Promise(resolve => img.onload = resolve);
+
+                const aspectRatio = img.width / img.height;
+                let photoWidth, photoHeight;
+                if (aspectRatio > 1) {
+                  photoWidth = maxPhotoSize;
+                  photoHeight = maxPhotoSize / aspectRatio;
+                } else {
+                  photoHeight = maxPhotoSize;
+                  photoWidth = maxPhotoSize * aspectRatio;
+                }
+
+                maxHeightInCurrentRow = Math.max(maxHeightInCurrentRow, photoHeight);
+
+                if (yPos + photoHeight > pageHeight - bottomMargin) {
+                  doc.addPage();
+                  yPos = 15;
+                  xPos = margin;
+                  photosInCurrentRow = 0;
+                  maxHeightInCurrentRow = photoHeight;
+                }
+
+                if (photosInCurrentRow > 0 && xPos + maxPhotoSize + 5 > pageWidth - margin) {
+                  yPos += maxHeightInCurrentRow + 5;
+                  xPos = margin;
+                  photosInCurrentRow = 0;
+                  maxHeightInCurrentRow = photoHeight;
+
+                  if (yPos + photoHeight > pageHeight - bottomMargin) {
+                    doc.addPage();
+                    yPos = 15;
+                  }
+                }
+
+                doc.setFillColor(255, 255, 255);
+                doc.rect(xPos, yPos, photoWidth, photoHeight, 'F');
+
+                doc.setDrawColor(200, 200, 200);
+                doc.setLineWidth(0.5);
+                doc.rect(xPos, yPos, photoWidth, photoHeight);
+
+                doc.addImage(base64, 'JPEG', xPos + 1, yPos + 1, photoWidth - 2, photoHeight - 2);
+
+                xPos += maxPhotoSize + 5;
+                photosInCurrentRow++;
+
+                if (photosInCurrentRow >= photosPerRow && photoIndex < issue.followUpImageIds.length - 1) {
+                  yPos += maxHeightInCurrentRow + 5;
+                  xPos = margin;
+                  photosInCurrentRow = 0;
+                  maxHeightInCurrentRow = 0;
+                }
+              }
+            } catch (err) {
+              console.warn(`Could not load follow-up photo ${issue.followUpImageIds[photoIndex]}:`, err);
+            }
+          }
+
+          if (photosInCurrentRow > 0) {
+            yPos += maxHeightInCurrentRow + 10;
+          } else {
+            yPos += 5;
+          }
+        }
       }
     }
 
@@ -5219,6 +5764,14 @@ async function sharePDFToWhatsApp(type) {
     summaryText += `📅 ${formattedDate}\n`;
     summaryText += `━━━━━━━━━━━━━━━━━━━━\n\n`;
 
+    // Pengawas Information
+    summaryText += `👤 *Pengawas:*\n`;
+    const uniquePengawas = [...new Set(data.map(d => `${d.namaPengawas} (NRP: ${d.nrp})`))];
+    uniquePengawas.forEach(pengawas => {
+      summaryText += `• ${pengawas}\n`;
+    });
+    summaryText += `\n`;
+
     if (type === 'productivity') {
       // Calculate productivity statistics
       const totalRecords = data.length;
@@ -5231,7 +5784,7 @@ async function sharePDFToWhatsApp(type) {
       summaryText += `📈 *Ringkasan Data:*\n`;
       summaryText += `• Total Records: ${totalRecords}\n`;
       summaryText += `• Jumlah Excavator: ${excavatorList.length}\n`;
-      summaryText += `• Pengawas: ${pengawasList.length} orang\n\n`;
+      summaryText += `• Pengawas: ${pengawasList.length}\n\n`;
 
       summaryText += `⚙️ *Productivity:*\n`;
       summaryText += `• Rata-rata: ${avgProductivity} BCM/Jam\n`;
@@ -5239,12 +5792,72 @@ async function sharePDFToWhatsApp(type) {
       summaryText += `• Terendah: ${minProductivity} BCM/Jam\n`;
       summaryText += `• Total Ritase: ${totalRitase}\n\n`;
 
-      // Excavator breakdown
-      summaryText += `🚜 *Per Excavator:*\n`;
+      // Detailed Excavator breakdown with problems
+      summaryText += `🚜 *Detail Per Excavator:*\n\n`;
       excavatorList.forEach(exc => {
-        const excData = data.filter(d => d.noExcavator === exc);
+        const excData = data.filter(d => d.noExcavator === exc).sort((a, b) => {
+          return new Date(a.waktu) - new Date(b.waktu);
+        });
         const excAvg = (excData.reduce((sum, d) => sum + d.productivity, 0) / excData.length).toFixed(2);
-        summaryText += `• ${exc}: ${excAvg} BCM/Jam (${excData.length} records)\n`;
+
+        // Get pengawas name for this excavator (use first record's pengawas)
+        const pengawasName = excData[0]?.namaPengawas || '';
+
+        summaryText += `*${exc}* | (Pengawas: ${pengawasName})\n`;
+        summaryText += `Rata-rata: ${excAvg} BCM/Jam\n\n`;
+
+        excData.forEach((record, idx) => {
+          const time = new Date(record.waktu);
+          const timeStr = time.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+          summaryText += `${String.fromCharCode(65 + idx)}. Jam ${timeStr} (${record.productivity} BCM/Jam)\n`;
+          summaryText += `   • Ritase: ${record.jumlahRitase}\n`;
+          summaryText += `   • HM Awal: ${record.hmAwal}\n`;
+          summaryText += `   • HM Akhir: ${record.hmAkhir}\n`;
+
+          // Find related issues for this excavator
+          const relatedIssues = AppState.issuesData.filter(issue => {
+            // Must match excavator (issue uses 'excavator' not 'noExcavator')
+            if (issue.excavator !== exc) return false;
+
+            // Check if issue has a time and matches (issue uses 'timestamp' not 'waktu')
+            if (issue.timestamp) {
+              const issueTime = new Date(issue.timestamp);
+              const recordTime = new Date(record.waktu);
+
+              // Match if same hour on the same date, OR within 1 hour window
+              const sameHour = issueTime.getHours() === recordTime.getHours() &&
+                issueTime.getDate() === recordTime.getDate() &&
+                issueTime.getMonth() === recordTime.getMonth();
+
+              const timeDiffMs = Math.abs(issueTime - recordTime);
+              const timeDiffHours = timeDiffMs / (1000 * 60 * 60);
+              const withinOneHour = timeDiffHours <= 1;
+
+              return sameHour || withinOneHour;
+            }
+
+            // If no time on issue, still include if same excavator
+            return true;
+          });
+
+          if (relatedIssues.length > 0) {
+            relatedIssues.forEach(issue => {
+              if (issue.delay) {
+                summaryText += `   • Problem Delay: ${issue.delay.mainCode} ‧ ${issue.delay.mainLabel}`;
+                if (issue.delay.subLabel) summaryText += ` - ${issue.delay.subLabel}`;
+                if (issue.delay.customText) summaryText += ` (${issue.delay.customText})`;
+                summaryText += `\n`;
+              }
+              if (issue.productivity) {
+                summaryText += `   • Problem Productivity: Kat. ${issue.productivity.mainCode} ‧ ${issue.productivity.mainLabel}`;
+                if (issue.productivity.customText) summaryText += ` (${issue.productivity.customText})`;
+                summaryText += `\n`;
+              }
+            });
+          }
+          summaryText += `\n`;
+        });
       });
     } else {
       // Match Factor statistics
@@ -5257,7 +5870,7 @@ async function sharePDFToWhatsApp(type) {
       summaryText += `📈 *Ringkasan Data:*\n`;
       summaryText += `• Total Records: ${totalRecords}\n`;
       summaryText += `• Jumlah Excavator: ${excavatorList.length}\n`;
-      summaryText += `• Pengawas: ${pengawasList.length} orang\n\n`;
+      summaryText += `• Pengawas: ${pengawasList.length}\n\n`;
 
       summaryText += `⚖️ *Match Factor:*\n`;
       summaryText += `• Rata-rata: ${avgMF}\n`;
@@ -5274,12 +5887,69 @@ async function sharePDFToWhatsApp(type) {
         summaryText += `• Status: ⚠️ Over Match (>1.1)\n\n`;
       }
 
-      // Excavator breakdown
-      summaryText += `🚜 *Per Excavator:*\n`;
+      // Detailed Excavator breakdown with problems
+      summaryText += `🚜 *Detail Per Excavator:*\n\n`;
       excavatorList.forEach(exc => {
-        const excData = data.filter(d => d.noExcavator === exc);
+        const excData = data.filter(d => d.noExcavator === exc).sort((a, b) => {
+          return new Date(a.waktu) - new Date(b.waktu);
+        });
         const excAvg = (excData.reduce((sum, d) => sum + d.matchFactor, 0) / excData.length).toFixed(2);
-        summaryText += `• ${exc}: ${excAvg} (${excData.length} records)\n`;
+
+        // Get pengawas name for this excavator (use first record's pengawas)
+        const pengawasName = excData[0]?.namaPengawas || '';
+
+        summaryText += `*${exc}* | (Pengawas: ${pengawasName})\n`;
+        summaryText += `Rata-rata: ${excAvg}\n\n`;
+
+        excData.forEach((record, idx) => {
+          const time = new Date(record.waktu);
+          const timeStr = time.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+          summaryText += `${String.fromCharCode(65 + idx)}. Jam ${timeStr} (${record.matchFactor})\n`;
+
+          // Find related issues for this excavator
+          const relatedIssues = AppState.issuesData.filter(issue => {
+            // Must match excavator (issue uses 'excavator' not 'noExcavator')
+            if (issue.excavator !== exc) return false;
+
+            // Check if issue has a time and matches (issue uses 'timestamp' not 'waktu')
+            if (issue.timestamp) {
+              const issueTime = new Date(issue.timestamp);
+              const recordTime = new Date(record.waktu);
+
+              // Match if same hour on the same date, OR within 1 hour window
+              const sameHour = issueTime.getHours() === recordTime.getHours() &&
+                issueTime.getDate() === recordTime.getDate() &&
+                issueTime.getMonth() === recordTime.getMonth();
+
+              const timeDiffMs = Math.abs(issueTime - recordTime);
+              const timeDiffHours = timeDiffMs / (1000 * 60 * 60);
+              const withinOneHour = timeDiffHours <= 1;
+
+              return sameHour || withinOneHour;
+            }
+
+            // If no time on issue, still include if same excavator
+            return true;
+          });
+
+          if (relatedIssues.length > 0) {
+            relatedIssues.forEach(issue => {
+              if (issue.delay) {
+                summaryText += `   • Problem Delay: ${issue.delay.mainCode} ‧ ${issue.delay.mainLabel}`;
+                if (issue.delay.subLabel) summaryText += ` - ${issue.delay.subLabel}`;
+                if (issue.delay.customText) summaryText += ` (${issue.delay.customText})`;
+                summaryText += `\n`;
+              }
+              if (issue.productivity) {
+                summaryText += `   • Problem Productivity: Kat. ${issue.productivity.mainCode} ‧ ${issue.productivity.mainLabel}`;
+                if (issue.productivity.customText) summaryText += ` (${issue.productivity.customText})`;
+                summaryText += `\n`;
+              }
+            });
+          }
+          summaryText += `\n`;
+        });
       });
     }
 
