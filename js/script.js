@@ -5855,6 +5855,7 @@ async function sharePDFToWhatsApp(type) {
               }
               if (issue.productivity) {
                 summaryText += `   • Problem Productivity: Kat. ${issue.productivity.mainCode} ‧ ${issue.productivity.mainLabel}`;
+                if (issue.productivity.subOption) summaryText += ` - ${issue.productivity.subOption}`;
                 if (issue.productivity.customText) summaryText += ` (${issue.productivity.customText})`;
                 summaryText += `\n`;
               }
@@ -5947,6 +5948,7 @@ async function sharePDFToWhatsApp(type) {
               }
               if (issue.productivity) {
                 summaryText += `   • Problem Productivity: Kat. ${issue.productivity.mainCode} ‧ ${issue.productivity.mainLabel}`;
+                if (issue.productivity.subOption) summaryText += ` - ${issue.productivity.subOption}`;
                 if (issue.productivity.customText) summaryText += ` (${issue.productivity.customText})`;
                 summaryText += `\n`;
               }
