@@ -1952,7 +1952,7 @@ function setupIssueModal() {
   }
 
   // Event Listeners
-  if (btnAddIssue) btnAddIssue.addEventListener('click', openIssueModal);
+  if (btnAddIssue) btnAddIssue.addEventListener('click', () => openIssueModal());
   if (closeBtn) closeBtn.addEventListener('click', closeIssueModal);
   if (cancelBtn) cancelBtn.addEventListener('click', closeIssueModal);
   if (saveBtn) saveBtn.addEventListener('click', saveIssue);
@@ -2359,8 +2359,10 @@ function renderProductivityTable(filteredData = null) {
     // Add zebra striping and hover effects
     row.className = 'hover:bg-blue-50 transition-colors duration-150 even:bg-gray-50 group fade-in';
 
-    // Calculate delay: 60 x (HM Akhir - HM Awal)
-    const delay = 60 * (parseFloat(item.hmAkhir) - parseFloat(item.hmAwal));
+    // Calculate delay: (WH_Target - (HM_Akhir - HM_Awal)) × 60
+    const selisihHM = parseFloat(item.hmAkhir) - parseFloat(item.hmAwal);
+    const whTarget = Math.ceil(selisihHM);
+    const delay = Math.max(0, (whTarget - selisihHM) * 60);
 
     row.innerHTML = `
             <td class="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap text-sm font-medium text-gray-900">${index + 1}</td>
@@ -2382,6 +2384,7 @@ function renderProductivityTable(filteredData = null) {
             <td class="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-700 text-right">${parseFloat(item.hmAkhir).toFixed(2)}</td>
             <td class="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-700 text-right">${parseFloat(item.kapasitas).toFixed(2)}</td>
             <td class="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap text-sm font-bold text-blue-600 text-right">${parseFloat(item.productivity).toFixed(2)}</td>
+            <td class="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap text-sm font-semibold text-green-600 text-right">${(selisihHM * 60).toFixed(2)}</td>
             <td class="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap text-sm font-semibold text-orange-600 text-right">${delay.toFixed(2)}</td>
             <td class="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap text-center">
                 <div class="flex items-center justify-center gap-1.5 sm:gap-2">
@@ -4474,15 +4477,20 @@ async function exportToExcel(type) {
         { header: 'Durasi (Jam)', key: 'durasi', width: 12 },
         { header: 'Kapasitas (BCM)', key: 'kapasitas', width: 15 },
         { header: 'Productivity (BCM/Jam)', key: 'productivity', width: 20 },
+        { header: 'WH (Menit)', key: 'wh', width: 15 },
         { header: 'Delay (Menit)', key: 'delay', width: 15 }
       ];
 
       data.forEach((item, index) => {
-        const delay = 60 * (parseFloat(item.hmAkhir) - parseFloat(item.hmAwal));
+        const selisihHM = parseFloat(item.hmAkhir) - parseFloat(item.hmAwal);
+        const whTarget = Math.ceil(selisihHM);
+        const delay = Math.max(0, (whTarget - selisihHM) * 60);
+        const wh = selisihHM * 60;
         dataSheet.addRow({
           no: index + 1,
           ...item,
           waktu: formatDateTime(item.waktu),
+          wh: wh.toFixed(2),
           delay: delay.toFixed(2)
         });
       });
@@ -4846,9 +4854,12 @@ async function exportToPDF(type) {
     let headers = [];
 
     if (type === 'productivity') {
-      headers = [['No', 'Pengawas', 'NRP', 'Waktu', 'No Excavator', 'Ritase', 'HM Awal', 'HM Akhir', 'Durasi (Jam)', 'Kapasitas (BCM)', 'Productivity (BCM/Jam)', 'Delay (Menit)']];
+      headers = [['No', 'Pengawas', 'NRP', 'Waktu', 'No Excavator', 'Ritase', 'HM Awal', 'HM Akhir', 'Durasi (Jam)', 'Kapasitas (BCM)', 'Productivity (BCM/Jam)', 'WH (Menit)', 'Delay (Menit)']];
       tableData = data.map((item, index) => {
-        const delay = 60 * (parseFloat(item.hmAkhir) - parseFloat(item.hmAwal));
+        const selisihHM = parseFloat(item.hmAkhir) - parseFloat(item.hmAwal);
+        const whTarget = Math.ceil(selisihHM);
+        const delay = Math.max(0, (whTarget - selisihHM) * 60);
+        const wh = selisihHM * 60;
         return [
           index + 1,
           item.namaPengawas,
@@ -4861,6 +4872,7 @@ async function exportToPDF(type) {
           item.durasi,
           item.kapasitas,
           item.productivity,
+          wh.toFixed(2),
           delay.toFixed(2)
         ];
       });
@@ -5337,9 +5349,12 @@ async function sharePDFToWhatsApp(type) {
     let headers = [];
 
     if (type === 'productivity') {
-      headers = [['No', 'Pengawas', 'NRP', 'Waktu', 'No Excavator', 'Ritase', 'HM Awal', 'HM Akhir', 'Durasi (Jam)', 'Kapasitas (BCM)', 'Productivity (BCM/Jam)', 'Delay (Menit)']];
+      headers = [['No', 'Pengawas', 'NRP', 'Waktu', 'No Excavator', 'Ritase', 'HM Awal', 'HM Akhir', 'Durasi (Jam)', 'Kapasitas (BCM)', 'Productivity (BCM/Jam)', 'WH (Menit)', 'Delay (Menit)']];
       tableData = data.map((item, index) => {
-        const delay = 60 * (parseFloat(item.hmAkhir) - parseFloat(item.hmAwal));
+        const selisihHM = parseFloat(item.hmAkhir) - parseFloat(item.hmAwal);
+        const whTarget = Math.ceil(selisihHM);
+        const delay = Math.max(0, (whTarget - selisihHM) * 60);
+        const wh = selisihHM * 60;
         return [
           index + 1,
           item.namaPengawas,
@@ -5352,6 +5367,7 @@ async function sharePDFToWhatsApp(type) {
           item.durasi,
           item.kapasitas,
           item.productivity,
+          wh.toFixed(2),
           delay.toFixed(2)
         ];
       });
@@ -5813,12 +5829,16 @@ async function sharePDFToWhatsApp(type) {
         excData.forEach((record, idx) => {
           const time = new Date(record.waktu);
           const timeStr = time.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false });
-          const delay = 60 * (parseFloat(record.hmAkhir) - parseFloat(record.hmAwal));
+          const selisihHM = parseFloat(record.hmAkhir) - parseFloat(record.hmAwal);
+          const whTarget = Math.ceil(selisihHM);
+          const delay = Math.max(0, (whTarget - selisihHM) * 60);
+          const wh = selisihHM * 60;
 
           summaryText += `${String.fromCharCode(65 + idx)}. Jam ${timeStr} (${record.productivity} BCM/Jam)\n`;
           summaryText += `   • Ritase: ${record.jumlahRitase}\n`;
           summaryText += `   • HM Awal: ${record.hmAwal}\n`;
           summaryText += `   • HM Akhir: ${record.hmAkhir}\n`;
+          summaryText += `   • WH (Menit): ${wh.toFixed(2)}\n`;
           summaryText += `   • Delay (Menit): ${delay.toFixed(2)}\n`;
 
           // Find related issues for this excavator
