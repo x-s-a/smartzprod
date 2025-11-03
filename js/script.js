@@ -972,7 +972,7 @@ function setupInputValidation() {
     return !isNaN(num) && num >= 0 && (isNaN(hmAwal) || num > hmAwal);
   });
 
-  validateInput('kapasitasVessel', (val) => {
+  validateInput('kapasitas', (val) => {
     const num = parseFloat(val);
     return !isNaN(num) && num > 0;
   });
@@ -3165,7 +3165,7 @@ window.editIssue = async function (index) {
   Object.keys(DELAY_OPTIONS).forEach(key => {
     const option = document.createElement('option');
     option.value = key;
-    option.textContent = `${key} - ${DELAY_OPTIONS[key].label}`;
+    option.textContent = key === 'D0' ? 'Tidak Ada' : `${key} - ${DELAY_OPTIONS[key].label}`;
     delayMainCategory.appendChild(option);
   });
 
@@ -3174,7 +3174,7 @@ window.editIssue = async function (index) {
   Object.keys(PRODUCTIVITY_OPTIONS).forEach(key => {
     const option = document.createElement('option');
     option.value = key;
-    option.textContent = `Category ${key}: ${PRODUCTIVITY_OPTIONS[key].label}`;
+    option.textContent = key === '0' ? 'Tidak Ada' : `Kategori ${key}: ${PRODUCTIVITY_OPTIONS[key].label}`;
     productivityMainCategory.appendChild(option);
   });
 
@@ -3320,6 +3320,16 @@ window.deleteIssue = function (index) {
           console.log(`✅ Deleted ${issue.imageIds.length} photos from IndexedDB for issue ${issue.id}`);
         } catch (error) {
           console.warn('Failed to delete some photos from IndexedDB:', error);
+        }
+      }
+
+      // Delete follow-up photos from IndexedDB if they exist
+      if (issue.followUpImageIds && issue.followUpImageIds.length > 0) {
+        try {
+          await imageStorage.deleteImages(issue.followUpImageIds);
+          console.log(`✅ Deleted ${issue.followUpImageIds.length} follow-up photos from IndexedDB for issue ${issue.id}`);
+        } catch (error) {
+          console.warn('Failed to delete some follow-up photos from IndexedDB:', error);
         }
       }
 
