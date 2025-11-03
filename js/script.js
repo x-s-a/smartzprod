@@ -1692,6 +1692,8 @@ function setupIssueModal() {
     // Pre-select excavator if provided
     if (preSelectedExcavator) {
       excavatorSelect.value = preSelectedExcavator;
+      // Trigger date population immediately for pre-selected excavator
+      populateDateOptions(preSelectedExcavator);
     }
 
     modal.classList.remove('hidden');
@@ -3401,8 +3403,10 @@ window.viewIssuesForExcavatorAndDate = function (excavator, dateStr) {
       `;
     }
 
-    // Photo count
-    const photoCount = (issue.imageIds && issue.imageIds.length) || 0;
+    // Photo count (both Dokumentasi Masalah and Follow Up)
+    const documentationPhotoCount = (issue.imageIds && issue.imageIds.length) || 0;
+    const followUpPhotoCount = (issue.followUpImageIds && issue.followUpImageIds.length) || 0;
+    const photoCount = documentationPhotoCount + followUpPhotoCount;
 
     contentHTML += `
       <div class="border border-gray-200 rounded-lg p-4 bg-white hover:shadow-md transition-shadow">
