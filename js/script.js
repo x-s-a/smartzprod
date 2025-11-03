@@ -5846,20 +5846,48 @@ async function sharePDFToWhatsApp(type) {
           });
 
           if (relatedIssues.length > 0) {
+            // Collect all delay problems
+            const delayProblems = [];
+            const prodProblems = [];
+            
             relatedIssues.forEach(issue => {
               if (issue.delay) {
-                summaryText += `   • Problem Delay: ${issue.delay.mainCode} ‧ ${issue.delay.mainLabel}`;
-                if (issue.delay.subLabel) summaryText += ` - ${issue.delay.subLabel}`;
-                if (issue.delay.customText) summaryText += ` (${issue.delay.customText})`;
-                summaryText += `\n`;
+                let delayText = `${issue.delay.mainCode} ‧ ${issue.delay.mainLabel}`;
+                if (issue.delay.subLabel) delayText += ` - ${issue.delay.subLabel}`;
+                if (issue.delay.customText) delayText += ` (${issue.delay.customText})`;
+                delayProblems.push(delayText);
               }
               if (issue.productivity) {
-                summaryText += `   • Problem Productivity: Kat. ${issue.productivity.mainCode} ‧ ${issue.productivity.mainLabel}`;
-                if (issue.productivity.subOption) summaryText += ` - ${issue.productivity.subOption}`;
-                if (issue.productivity.customText) summaryText += ` (${issue.productivity.customText})`;
-                summaryText += `\n`;
+                let prodText = `Kat. ${issue.productivity.mainCode} ‧ ${issue.productivity.mainLabel}`;
+                if (issue.productivity.subOption) prodText += ` - ${issue.productivity.subOption}`;
+                if (issue.productivity.customText) prodText += ` (${issue.productivity.customText})`;
+                prodProblems.push(prodText);
               }
             });
+            
+            // Format Delay Problems
+            if (delayProblems.length > 0) {
+              if (delayProblems.length === 1) {
+                summaryText += `   • Problem Delay: ${delayProblems[0]}\n`;
+              } else {
+                summaryText += `   • Problem Delay:\n`;
+                delayProblems.forEach(problem => {
+                  summaryText += `~ ${problem}\n`;
+                });
+              }
+            }
+            
+            // Format Productivity Problems
+            if (prodProblems.length > 0) {
+              if (prodProblems.length === 1) {
+                summaryText += `   • Problem Productivity: ${prodProblems[0]}\n`;
+              } else {
+                summaryText += `   • Problem Productivity:\n`;
+                prodProblems.forEach(problem => {
+                  summaryText += `~ ${problem}\n`;
+                });
+              }
+            }
           }
           summaryText += `\n`;
         });
@@ -5939,20 +5967,48 @@ async function sharePDFToWhatsApp(type) {
           });
 
           if (relatedIssues.length > 0) {
+            // Collect all delay problems
+            const delayProblems = [];
+            const prodProblems = [];
+            
             relatedIssues.forEach(issue => {
               if (issue.delay) {
-                summaryText += `   • Problem Delay: ${issue.delay.mainCode} ‧ ${issue.delay.mainLabel}`;
-                if (issue.delay.subLabel) summaryText += ` - ${issue.delay.subLabel}`;
-                if (issue.delay.customText) summaryText += ` (${issue.delay.customText})`;
-                summaryText += `\n`;
+                let delayText = `${issue.delay.mainCode} ‧ ${issue.delay.mainLabel}`;
+                if (issue.delay.subLabel) delayText += ` - ${issue.delay.subLabel}`;
+                if (issue.delay.customText) delayText += ` (${issue.delay.customText})`;
+                delayProblems.push(delayText);
               }
               if (issue.productivity) {
-                summaryText += `   • Problem Productivity: Kat. ${issue.productivity.mainCode} ‧ ${issue.productivity.mainLabel}`;
-                if (issue.productivity.subOption) summaryText += ` - ${issue.productivity.subOption}`;
-                if (issue.productivity.customText) summaryText += ` (${issue.productivity.customText})`;
-                summaryText += `\n`;
+                let prodText = `Kat. ${issue.productivity.mainCode} ‧ ${issue.productivity.mainLabel}`;
+                if (issue.productivity.subOption) prodText += ` - ${issue.productivity.subOption}`;
+                if (issue.productivity.customText) prodText += ` (${issue.productivity.customText})`;
+                prodProblems.push(prodText);
               }
             });
+            
+            // Format Delay Problems
+            if (delayProblems.length > 0) {
+              if (delayProblems.length === 1) {
+                summaryText += `   • Problem Delay: ${delayProblems[0]}\n`;
+              } else {
+                summaryText += `   • Problem Delay:\n`;
+                delayProblems.forEach(problem => {
+                  summaryText += `~ ${problem}\n`;
+                });
+              }
+            }
+            
+            // Format Productivity Problems
+            if (prodProblems.length > 0) {
+              if (prodProblems.length === 1) {
+                summaryText += `   • Problem Productivity: ${prodProblems[0]}\n`;
+              } else {
+                summaryText += `   • Problem Productivity:\n`;
+                prodProblems.forEach(problem => {
+                  summaryText += `~ ${problem}\n`;
+                });
+              }
+            }
           }
           summaryText += `\n`;
         });
