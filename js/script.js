@@ -5813,11 +5813,13 @@ async function sharePDFToWhatsApp(type) {
         excData.forEach((record, idx) => {
           const time = new Date(record.waktu);
           const timeStr = time.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false });
+          const delay = 60 * (parseFloat(record.hmAkhir) - parseFloat(record.hmAwal));
 
           summaryText += `${String.fromCharCode(65 + idx)}. Jam ${timeStr} (${record.productivity} BCM/Jam)\n`;
           summaryText += `   • Ritase: ${record.jumlahRitase}\n`;
           summaryText += `   • HM Awal: ${record.hmAwal}\n`;
           summaryText += `   • HM Akhir: ${record.hmAkhir}\n`;
+          summaryText += `   • Delay (Menit): ${delay.toFixed(2)}\n`;
 
           // Find related issues for this excavator
           const relatedIssues = AppState.issuesData.filter(issue => {
@@ -5849,7 +5851,7 @@ async function sharePDFToWhatsApp(type) {
             // Collect all delay problems
             const delayProblems = [];
             const prodProblems = [];
-            
+
             relatedIssues.forEach(issue => {
               if (issue.delay) {
                 let delayText = `${issue.delay.mainCode} ‧ ${issue.delay.mainLabel}`;
@@ -5864,7 +5866,7 @@ async function sharePDFToWhatsApp(type) {
                 prodProblems.push(prodText);
               }
             });
-            
+
             // Format Delay Problems
             if (delayProblems.length > 0) {
               if (delayProblems.length === 1) {
@@ -5876,7 +5878,7 @@ async function sharePDFToWhatsApp(type) {
                 });
               }
             }
-            
+
             // Format Productivity Problems
             if (prodProblems.length > 0) {
               if (prodProblems.length === 1) {
@@ -5970,7 +5972,7 @@ async function sharePDFToWhatsApp(type) {
             // Collect all delay problems
             const delayProblems = [];
             const prodProblems = [];
-            
+
             relatedIssues.forEach(issue => {
               if (issue.delay) {
                 let delayText = `${issue.delay.mainCode} ‧ ${issue.delay.mainLabel}`;
@@ -5985,7 +5987,7 @@ async function sharePDFToWhatsApp(type) {
                 prodProblems.push(prodText);
               }
             });
-            
+
             // Format Delay Problems
             if (delayProblems.length > 0) {
               if (delayProblems.length === 1) {
@@ -5997,7 +5999,7 @@ async function sharePDFToWhatsApp(type) {
                 });
               }
             }
-            
+
             // Format Productivity Problems
             if (prodProblems.length > 0) {
               if (prodProblems.length === 1) {
