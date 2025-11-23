@@ -954,6 +954,8 @@ function setupInputValidation() {
   validateInput('namaPengawas', (val) => val.trim().length > 0);
   validateInput('nrp', (val) => val.trim().length > 0);
   validateInput('noExcavator', (val) => /^EX[0-9]{4}$/.test(val));
+  validateInput('namaOperator', (val) => val.trim().length > 0);
+  validateInput('jenisMaterial', (val) => val.trim().length > 0);
 
   // Productivity Calculator Validations
   validateInput('jumlahRitase', (val) => {
@@ -1005,6 +1007,361 @@ function setupInputValidation() {
 // ==========================================
 // Issue Modal Setup & Handlers
 // ==========================================
+// ===== HELPER FUNCTIONS FOR FORMATTING MULTIPLE DELAYS/PRODUCTIVITIES =====
+function getIssueDelays(issue) {
+  // Return delays array with backward compatibility
+  return issue.delays || (issue.delay ? [issue.delay] : []);
+}
+
+function getIssueProductivities(issue) {
+  // Return productivities array with backward compatibility
+  return issue.productivities || (issue.productivity ? [issue.productivity] : []);
+}
+
+function formatDelaysHTML(issue, separator = '<br>') {
+  const delays = getIssueDelays(issue);
+  if (delays.length === 0) return '<span class="text-gray-400">Tidak ada</span>';
+
+  return delays.map(delay => {
+    let html = `<div class="font-semibold text-red-700">${delay.mainCode}: ${delay.mainLabel}</div>`;
+    if (delay.subCode && delay.subLabel) {
+      html += `<div class="text-gray-600 mt-1">${delay.subCode} - ${delay.subLabel}</div>`;
+    }
+    if (delay.customText) {
+      html += `<div class="text-gray-500 italic mt-1">${delay.customText}</div>`;
+    }
+    return html;
+  }).join(separator);
+}
+
+function formatProductivitiesHTML(issue, separator = '<br>') {
+  const productivities = getIssueProductivities(issue);
+  if (productivities.length === 0) return '<span class="text-gray-400">Tidak ada</span>';
+
+  return productivities.map(prod => {
+    let html = `<div class="font-semibold text-orange-700">Kat. ${prod.mainCode}: ${prod.mainLabel}</div>`;
+    if (prod.subOption) {
+      html += `<div class="text-gray-600 mt-1">${prod.subOption}</div>`;
+    }
+    if (prod.customText) {
+      html += `<div class="text-gray-500 italic mt-1">${prod.customText}</div>`;
+    }
+    return html;
+  }).join(separator);
+}
+
+function formatDelaysText(issue, separator = '\n') {
+  const delays = getIssueDelays(issue);
+  if (delays.length === 0) return 'Tidak ada';
+
+  return delays.map(delay => {
+    let text = `${delay.mainCode} - ${delay.mainLabel}`;
+    if (delay.subCode && delay.subLabel) {
+      text += ` | ${delay.subCode} - ${delay.subLabel}`;
+    }
+    if (delay.customText) {
+      text += ` | ${delay.customText}`;
+    }
+    return text;
+  }).join(separator);
+}
+
+function formatProductivitiesText(issue, separator = '\n') {
+  const productivities = getIssueProductivities(issue);
+  if (productivities.length === 0) return 'Tidak ada';
+
+  return productivities.map(prod => {
+    let text = `Kat. ${prod.mainCode} - ${prod.mainLabel}`;
+    if (prod.subOption) {
+      text += ` | ${prod.subOption}`;
+    }
+    if (prod.customText) {
+      text += ` | ${prod.customText}`;
+    }
+    return text;
+  }).join(separator);
+}
+
+// ===== GLOBAL VARIABLES FOR DYNAMIC DELAY/PRODUCTIVITY ITEMS =====
+let delayItems = [];
+let productivityItems = [];
+let delayItemsContainer;
+let productivityItemsContainer;
+let addDelayBtn;
+let addProductivityBtn;
+
+// ===== DYNAMIC DELAY ITEMS FUNCTIONS (GLOBAL) =====
+function createDelayItem(index) {
+  return {
+    id: Date.now() + index,
+    mainCode: '',
+    subCode: '',
+    customText: ''
+  };
+}
+
+function renderDelayItems() {
+  if (!delayItemsContainer) return;
+
+  delayItemsContainer.innerHTML = '';
+  delayItems.forEach((item, index) => {
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'border-l-4 border-red-500 bg-red-50/50 rounded-lg p-3 sm:p-4 relative animate-fade-in';
+    itemDiv.dataset.index = index;
+
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'flex items-center justify-between mb-3';
+
+    const badge = document.createElement('span');
+    badge.className = 'text-xs font-bold text-red-600 bg-red-100 px-2 py-1 rounded';
+    badge.textContent = `Delay #${index + 1}`;
+    headerDiv.appendChild(badge);
+
+    // Only show delete button if more than 1 item
+    if (delayItems.length > 1) {
+      const deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'text-red-500 hover:text-red-700 hover:bg-red-100 w-8 h-8 rounded-full transition-all';
+      deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+      deleteBtn.onclick = () => removeDelayItem(index);
+      headerDiv.appendChild(deleteBtn);
+    }
+
+    itemDiv.appendChild(headerDiv);
+
+    // Main Category
+    const mainDiv = document.createElement('div');
+    mainDiv.className = 'mb-3';
+    const mainLabel = document.createElement('label');
+    mainLabel.className = 'block text-sm font-semibold text-gray-700 mb-2';
+    mainLabel.textContent = 'Pilih Kategori Delay';
+    const mainSelect = document.createElement('select');
+    mainSelect.className = 'w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all text-sm bg-white';
+    mainSelect.innerHTML = '<option value="">-- Pilih Kategori --</option>';
+    Object.keys(DELAY_OPTIONS).forEach(key => {
+      const option = document.createElement('option');
+      option.value = key;
+      option.textContent = key === 'D0' ? 'Tidak Ada' : `${key} - ${DELAY_OPTIONS[key].label}`;
+      if (item.mainCode === key) option.selected = true;
+      mainSelect.appendChild(option);
+    });
+    mainSelect.onchange = (e) => handleDelayMainChange(index, e.target.value);
+    mainDiv.appendChild(mainLabel);
+    mainDiv.appendChild(mainSelect);
+    itemDiv.appendChild(mainDiv);
+
+    // Sub Category (shown if applicable)
+    if (item.mainCode && DELAY_OPTIONS[item.mainCode]?.sub?.length > 0) {
+      const subDiv = document.createElement('div');
+      subDiv.className = 'mb-3';
+      const subLabel = document.createElement('label');
+      subLabel.className = 'block text-sm font-semibold text-gray-700 mb-2';
+      subLabel.textContent = 'Pilih Sub-Kategori';
+      const subSelect = document.createElement('select');
+      subSelect.className = 'w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all text-sm bg-white';
+      subSelect.innerHTML = '<option value="">-- Pilih Sub-Kategori --</option>';
+      DELAY_OPTIONS[item.mainCode].sub.forEach(subOption => {
+        const option = document.createElement('option');
+        option.value = subOption.code;
+        option.textContent = `${subOption.code} - ${subOption.label}`;
+        if (item.subCode === subOption.code) option.selected = true;
+        subSelect.appendChild(option);
+      });
+      subSelect.onchange = (e) => handleDelaySubChange(index, e.target.value);
+      subDiv.appendChild(subLabel);
+      subDiv.appendChild(subSelect);
+      itemDiv.appendChild(subDiv);
+    }
+
+    // Custom Text (shown if "Others" selected)
+    if (item.subCode && item.subCode.toLowerCase().includes('other')) {
+      const customDiv = document.createElement('div');
+      customDiv.className = 'mb-2';
+      const customLabel = document.createElement('label');
+      customLabel.className = 'block text-sm font-semibold text-gray-700 mb-2';
+      customLabel.textContent = 'Keterangan Detail';
+      const customTextarea = document.createElement('textarea');
+      customTextarea.className = 'w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all text-sm resize-none';
+      customTextarea.rows = 2;
+      customTextarea.placeholder = 'Masukkan keterangan detail...';
+      customTextarea.value = item.customText || '';
+      customTextarea.oninput = (e) => {
+        delayItems[index].customText = e.target.value;
+      };
+      customDiv.appendChild(customLabel);
+      customDiv.appendChild(customTextarea);
+      itemDiv.appendChild(customDiv);
+    }
+
+    delayItemsContainer.appendChild(itemDiv);
+  });
+}
+
+function handleDelayMainChange(index, value) {
+  delayItems[index].mainCode = value;
+  delayItems[index].subCode = '';
+  delayItems[index].customText = '';
+  renderDelayItems();
+}
+
+function handleDelaySubChange(index, value) {
+  delayItems[index].subCode = value;
+  if (!value.toLowerCase().includes('other')) {
+    delayItems[index].customText = '';
+  }
+  renderDelayItems();
+}
+
+function addDelayItem() {
+  delayItems.push(createDelayItem(delayItems.length));
+  renderDelayItems();
+}
+
+function removeDelayItem(index) {
+  if (delayItems.length <= 1) {
+    showAlert('Minimal harus ada 1 Delay Problem!', 'warning');
+    return;
+  }
+  delayItems.splice(index, 1);
+  renderDelayItems();
+}
+
+// ===== DYNAMIC PRODUCTIVITY ITEMS FUNCTIONS (GLOBAL) =====
+function createProductivityItem(index) {
+  return {
+    id: Date.now() + index,
+    mainCode: '',
+    subOption: '',
+    customText: ''
+  };
+}
+
+function renderProductivityItems() {
+  if (!productivityItemsContainer) return;
+
+  productivityItemsContainer.innerHTML = '';
+  productivityItems.forEach((item, index) => {
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'border-l-4 border-orange-500 bg-orange-50/50 rounded-lg p-3 sm:p-4 relative animate-fade-in';
+    itemDiv.dataset.index = index;
+
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'flex items-center justify-between mb-3';
+
+    const badge = document.createElement('span');
+    badge.className = 'text-xs font-bold text-orange-600 bg-orange-100 px-2 py-1 rounded';
+    badge.textContent = `Productivity #${index + 1}`;
+    headerDiv.appendChild(badge);
+
+    // Only show delete button if more than 1 item
+    if (productivityItems.length > 1) {
+      const deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'text-orange-600 hover:text-orange-700 hover:bg-orange-100 w-8 h-8 rounded-full transition-all';
+      deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+      deleteBtn.onclick = () => removeProductivityItem(index);
+      headerDiv.appendChild(deleteBtn);
+    }
+
+    itemDiv.appendChild(headerDiv);
+
+    // Main Category
+    const mainDiv = document.createElement('div');
+    mainDiv.className = 'mb-3';
+    const mainLabel = document.createElement('label');
+    mainLabel.className = 'block text-sm font-semibold text-gray-700 mb-2';
+    mainLabel.textContent = 'Pilih Kategori Productivity';
+    const mainSelect = document.createElement('select');
+    mainSelect.className = 'w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm bg-white';
+    mainSelect.innerHTML = '<option value="">-- Pilih Kategori --</option>';
+    Object.keys(PRODUCTIVITY_OPTIONS).forEach(key => {
+      const option = document.createElement('option');
+      option.value = key;
+      option.textContent = key === '0' ? 'Tidak Ada' : `Kategori ${key}: ${PRODUCTIVITY_OPTIONS[key].label}`;
+      if (item.mainCode === key) option.selected = true;
+      mainSelect.appendChild(option);
+    });
+    mainSelect.onchange = (e) => handleProductivityMainChange(index, e.target.value);
+    mainDiv.appendChild(mainLabel);
+    mainDiv.appendChild(mainSelect);
+    itemDiv.appendChild(mainDiv);
+
+    // Sub Category (shown if applicable)
+    if (item.mainCode && PRODUCTIVITY_OPTIONS[item.mainCode]?.sub?.length > 0) {
+      const subDiv = document.createElement('div');
+      subDiv.className = 'mb-3';
+      const subLabel = document.createElement('label');
+      subLabel.className = 'block text-sm font-semibold text-gray-700 mb-2';
+      subLabel.textContent = 'Pilih Sub-Kategori';
+      const subSelect = document.createElement('select');
+      subSelect.className = 'w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm bg-white';
+      subSelect.innerHTML = '<option value="">-- Pilih Sub-Kategori --</option>';
+      PRODUCTIVITY_OPTIONS[item.mainCode].sub.forEach(subOption => {
+        const option = document.createElement('option');
+        option.value = subOption;
+        option.textContent = subOption;
+        if (item.subOption === subOption) option.selected = true;
+        subSelect.appendChild(option);
+      });
+      subSelect.onchange = (e) => handleProductivitySubChange(index, e.target.value);
+      subDiv.appendChild(subLabel);
+      subDiv.appendChild(subSelect);
+      itemDiv.appendChild(subDiv);
+    }
+
+    // Custom Text (shown if "Other" selected)
+    if (item.subOption && item.subOption.toLowerCase() === 'other') {
+      const customDiv = document.createElement('div');
+      customDiv.className = 'mb-2';
+      const customLabel = document.createElement('label');
+      customLabel.className = 'block text-sm font-semibold text-gray-700 mb-2';
+      customLabel.textContent = 'Keterangan Detail';
+      const customTextarea = document.createElement('textarea');
+      customTextarea.className = 'w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm resize-none';
+      customTextarea.rows = 2;
+      customTextarea.placeholder = 'Masukkan keterangan detail...';
+      customTextarea.value = item.customText || '';
+      customTextarea.oninput = (e) => {
+        productivityItems[index].customText = e.target.value;
+      };
+      customDiv.appendChild(customLabel);
+      customDiv.appendChild(customTextarea);
+      itemDiv.appendChild(customDiv);
+    }
+
+    productivityItemsContainer.appendChild(itemDiv);
+  });
+}
+
+function handleProductivityMainChange(index, value) {
+  productivityItems[index].mainCode = value;
+  productivityItems[index].subOption = '';
+  productivityItems[index].customText = '';
+  renderProductivityItems();
+}
+
+function handleProductivitySubChange(index, value) {
+  productivityItems[index].subOption = value;
+  if (value.toLowerCase() !== 'other') {
+    productivityItems[index].customText = '';
+  }
+  renderProductivityItems();
+}
+
+function addProductivityItem() {
+  productivityItems.push(createProductivityItem(productivityItems.length));
+  renderProductivityItems();
+}
+
+function removeProductivityItem(index) {
+  if (productivityItems.length <= 1) {
+    showAlert('Minimal harus ada 1 Productivity Problem!', 'warning');
+    return;
+  }
+  productivityItems.splice(index, 1);
+  renderProductivityItems();
+}
+
 function setupIssueModal() {
   const modal = document.getElementById('issueModal');
   const btnAddIssue = document.getElementById('btnAddIssue');
@@ -1017,19 +1374,11 @@ function setupIssueModal() {
   const dateContainer = document.getElementById('issueDateContainer');
   const dateSelect = document.getElementById('issueDateSelect');
 
-  // Delay Problem elements
-  const delayMainCategory = document.getElementById('delayMainCategory');
-  const delaySubCategoryContainer = document.getElementById('delaySubCategoryContainer');
-  const delaySubCategory = document.getElementById('delaySubCategory');
-  const delayCustomTextContainer = document.getElementById('delayCustomTextContainer');
-  const delayCustomText = document.getElementById('delayCustomText');
-
-  // Productivity Problem elements
-  const productivityMainCategory = document.getElementById('productivityMainCategory');
-  const productivitySubCategoryContainer = document.getElementById('productivitySubCategoryContainer');
-  const productivitySubCategory = document.getElementById('productivitySubCategory');
-  const productivityCustomTextContainer = document.getElementById('productivityCustomTextContainer');
-  const productivityCustomText = document.getElementById('productivityCustomText');
+  // Set global container references
+  delayItemsContainer = document.getElementById('delayItemsContainer');
+  addDelayBtn = document.getElementById('addDelayBtn');
+  productivityItemsContainer = document.getElementById('productivityItemsContainer');
+  addProductivityBtn = document.getElementById('addProductivityBtn');
 
   // Photo elements
   const photoBtn = document.getElementById('issuePhotoBtn');
@@ -1048,27 +1397,11 @@ function setupIssueModal() {
 
   let currentPhotoBase64 = null;
 
-  // Populate Delay Options
-  function populateDelayOptions() {
-    delayMainCategory.innerHTML = '<option value="">-- Pilih Kategori --</option>';
-    Object.keys(DELAY_OPTIONS).forEach(key => {
-      const option = document.createElement('option');
-      option.value = key;
-      option.textContent = key === 'D0' ? 'Tidak Ada' : `${key} - ${DELAY_OPTIONS[key].label}`;
-      delayMainCategory.appendChild(option);
-    });
-  }
+  // Note: Dynamic delay/productivity functions are now global (defined above setupIssueModal)
 
-  // Populate Productivity Options
-  function populateProductivityOptions() {
-    productivityMainCategory.innerHTML = '<option value="">-- Pilih Kategori --</option>';
-    Object.keys(PRODUCTIVITY_OPTIONS).forEach(key => {
-      const option = document.createElement('option');
-      option.value = key;
-      option.textContent = key === '0' ? 'Tidak Ada' : `Kategori ${key}: ${PRODUCTIVITY_OPTIONS[key].label}`;
-      productivityMainCategory.appendChild(option);
-    });
-  }
+  // Event listeners for add buttons
+  addDelayBtn.addEventListener('click', addDelayItem);
+  addProductivityBtn.addEventListener('click', addProductivityItem);
 
   // Populate Excavator Options
   function populateExcavatorOptions() {
@@ -1092,86 +1425,6 @@ function setupIssueModal() {
   excavatorSelect.addEventListener('change', function () {
     const selectedExcavator = this.value;
     populateDateOptions(selectedExcavator);
-  });
-
-  // Delay Main Category Change
-  delayMainCategory.addEventListener('change', function () {
-    const selectedKey = this.value;
-
-    // Reset sub-category and custom text
-    delaySubCategory.innerHTML = '<option value="">-- Pilih Sub-Kategori --</option>';
-    delaySubCategoryContainer.classList.add('hidden');
-    delayCustomTextContainer.classList.add('hidden');
-    delayCustomText.value = '';
-
-    if (selectedKey && DELAY_OPTIONS[selectedKey]) {
-      const subOptions = DELAY_OPTIONS[selectedKey].sub;
-
-      if (subOptions && subOptions.length > 0) {
-        // Has sub-options, show sub-category dropdown
-        delaySubCategoryContainer.classList.remove('hidden');
-
-        subOptions.forEach(subOption => {
-          const option = document.createElement('option');
-          option.value = subOption.code;
-          option.textContent = `${subOption.code} - ${subOption.label}`;
-          delaySubCategory.appendChild(option);
-        });
-      }
-    }
-  });
-
-  // Delay Sub Category Change
-  delaySubCategory.addEventListener('change', function () {
-    const selectedValue = this.value;
-
-    // Show custom text if "Others" selected
-    if (selectedValue && selectedValue.toLowerCase().includes('other')) {
-      delayCustomTextContainer.classList.remove('hidden');
-    } else {
-      delayCustomTextContainer.classList.add('hidden');
-      delayCustomText.value = '';
-    }
-  });
-
-  // Productivity Main Category Change
-  productivityMainCategory.addEventListener('change', function () {
-    const selectedKey = this.value;
-
-    // Reset sub-category and custom text
-    productivitySubCategory.innerHTML = '<option value="">-- Pilih Sub-Kategori --</option>';
-    productivitySubCategoryContainer.classList.add('hidden');
-    productivityCustomTextContainer.classList.add('hidden');
-    productivityCustomText.value = '';
-
-    if (selectedKey && PRODUCTIVITY_OPTIONS[selectedKey]) {
-      const subOptions = PRODUCTIVITY_OPTIONS[selectedKey].sub;
-
-      if (subOptions && subOptions.length > 0) {
-        // Has sub-options, show sub-category dropdown
-        productivitySubCategoryContainer.classList.remove('hidden');
-
-        subOptions.forEach(subOption => {
-          const option = document.createElement('option');
-          option.value = subOption;
-          option.textContent = subOption;
-          productivitySubCategory.appendChild(option);
-        });
-      }
-    }
-  });
-
-  // Productivity Sub Category Change
-  productivitySubCategory.addEventListener('change', function () {
-    const selectedValue = this.value;
-
-    // Show custom text if "Other" selected
-    if (selectedValue && selectedValue.toLowerCase() === 'other') {
-      productivityCustomTextContainer.classList.remove('hidden');
-    } else {
-      productivityCustomTextContainer.classList.add('hidden');
-      productivityCustomText.value = '';
-    }
   });
 
   // Photo Upload Handler - Multiple Photos Support
@@ -1685,9 +1938,17 @@ function setupIssueModal() {
 
   // Open Modal
   function openIssueModal(preSelectedExcavator = null) {
-    populateDelayOptions();
-    populateProductivityOptions();
     populateExcavatorOptions();
+
+    // Initialize with one empty delay and one empty productivity item
+    if (delayItems.length === 0) {
+      delayItems = [createDelayItem(0)];
+      renderDelayItems();
+    }
+    if (productivityItems.length === 0) {
+      productivityItems = [createProductivityItem(0)];
+      renderProductivityItems();
+    }
 
     // Pre-select excavator if provided
     if (preSelectedExcavator) {
@@ -1739,17 +2000,11 @@ function setupIssueModal() {
     dateSelect.value = '';
     dateContainer.classList.add('hidden');
 
-    delayMainCategory.value = '';
-    delaySubCategory.innerHTML = '<option value="">-- Pilih Sub-Kategori --</option>';
-    delaySubCategoryContainer.classList.add('hidden');
-    delayCustomText.value = '';
-    delayCustomTextContainer.classList.add('hidden');
-
-    productivityMainCategory.value = '';
-    productivitySubCategory.innerHTML = '<option value="">-- Pilih Sub-Kategori --</option>';
-    productivitySubCategoryContainer.classList.add('hidden');
-    productivityCustomText.value = '';
-    productivityCustomTextContainer.classList.add('hidden');
+    // Reset delay and productivity arrays
+    delayItems = [createDelayItem(0)];
+    productivityItems = [createProductivityItem(0)];
+    renderDelayItems();
+    renderProductivityItems();
 
     // Clear photos
     currentPhotoBlobs.forEach(photo => {
@@ -1773,12 +2028,6 @@ function setupIssueModal() {
   async function saveIssue() {
     const excavator = excavatorSelect.value;
     const selectedDate = dateSelect.value;
-    const delayMain = delayMainCategory.value;
-    const delaySub = delaySubCategory.value;
-    const delayCustom = delayCustomText.value.trim();
-    const productivityMain = productivityMainCategory.value;
-    const productivitySub = productivitySubCategory.value;
-    const productivityCustom = productivityCustomText.value.trim();
     const notes = additionalNotes.value.trim();
     const followUpNotes = document.getElementById('followUpNotes').value.trim();
 
@@ -1798,14 +2047,17 @@ function setupIssueModal() {
       return;
     }
 
-    // Validation: Sections 1 and 2 are REQUIRED, sections 3 and 4 are OPTIONAL
-    if (!delayMain) {
-      showAlert('Section 1 (Delay Problem) wajib diisi!', 'error');
+    // Validation: At least one valid delay with mainCode
+    const validDelays = delayItems.filter(item => item.mainCode);
+    if (validDelays.length === 0) {
+      showAlert('Minimal harus ada 1 Delay Problem yang diisi!', 'error');
       return;
     }
 
-    if (!productivityMain) {
-      showAlert('Section 2 (Productivity Problem) wajib diisi!', 'error');
+    // Validation: At least one valid productivity with mainCode
+    const validProductivities = productivityItems.filter(item => item.mainCode);
+    if (validProductivities.length === 0) {
+      showAlert('Minimal harus ada 1 Productivity Problem yang diisi!', 'error');
       return;
     }
 
@@ -1864,36 +2116,40 @@ function setupIssueModal() {
       };
     }
 
-    // Process Delay Problem
-    if (delayMain) {
-      const delayLabel = DELAY_OPTIONS[delayMain]?.label || '';
+    // Process Delay Problems (multiple)
+    issue.delays = validDelays.map(item => {
+      const delayLabel = DELAY_OPTIONS[item.mainCode]?.label || '';
       let delaySubLabel = '';
 
-      if (delaySub) {
-        const subOption = DELAY_OPTIONS[delayMain]?.sub?.find(s => s.code === delaySub);
+      if (item.subCode) {
+        const subOption = DELAY_OPTIONS[item.mainCode]?.sub?.find(s => s.code === item.subCode);
         delaySubLabel = subOption ? subOption.label : '';
       }
 
-      issue.delay = {
-        mainCode: delayMain,
+      return {
+        mainCode: item.mainCode,
         mainLabel: delayLabel,
-        subCode: delaySub || null,
+        subCode: item.subCode || null,
         subLabel: delaySubLabel || null,
-        customText: delayCustom || null
+        customText: item.customText || null
       };
-    }
+    });
 
-    // Process Productivity Problem
-    if (productivityMain) {
-      const productivityLabel = PRODUCTIVITY_OPTIONS[productivityMain]?.label || '';
+    // Process Productivity Problems (multiple)
+    issue.productivities = validProductivities.map(item => {
+      const productivityLabel = PRODUCTIVITY_OPTIONS[item.mainCode]?.label || '';
 
-      issue.productivity = {
-        mainCode: productivityMain,
+      return {
+        mainCode: item.mainCode,
         mainLabel: productivityLabel,
-        subOption: productivitySub || null,
-        customText: productivityCustom || null
+        subOption: item.subOption || null,
+        customText: item.customText || null
       };
-    }
+    });
+
+    // Backward compatibility: Keep first items as single delay/productivity
+    issue.delay = issue.delays[0] || null;
+    issue.productivity = issue.productivities[0] || null;
 
     // Store photos in IndexedDB
     if (currentPhotoBlobs.length > 0) {
@@ -2203,14 +2459,16 @@ function calculateProductivity() {
   const nrp = document.getElementById('nrp').value.trim();
   const waktu = document.getElementById('waktu').value;
   const noExcavator = document.getElementById('noExcavator').value.trim();
+  const namaOperator = document.getElementById('namaOperator').value.trim();
+  const jenisMaterial = document.getElementById('jenisMaterial').value;
   const jumlahRitase = parseFloat(document.getElementById('jumlahRitase').value) || 0;
   const hmAwal = parseFloat(document.getElementById('hmAwal').value) || 0;
   const hmAkhir = parseFloat(document.getElementById('hmAkhir').value) || 0;
   const kapasitas = parseFloat(document.getElementById('kapasitas').value) || 0;
 
   // Validation
-  if (!namaPengawas || !nrp || !noExcavator) {
-    showAlert('Mohon lengkapi Data Umum (Nama Pengawas, NRP, dan No Excavator)', 'error');
+  if (!namaPengawas || !nrp || !noExcavator || !namaOperator || !jenisMaterial) {
+    showAlert('Mohon lengkapi Data Umum (Nama Pengawas, NRP, No Excavator, Nama Operator, dan Jenis Material)', 'error');
     return;
   }
 
@@ -2233,6 +2491,8 @@ function calculateProductivity() {
     nrp,
     waktu: waktu || new Date().toISOString().slice(0, 16),
     noExcavator,
+    namaOperator,
+    jenisMaterial,
     jumlahRitase,
     hmAwal,
     hmAkhir,
@@ -2269,13 +2529,15 @@ function calculateMatchFactor() {
   const nrp = document.getElementById('nrp').value.trim();
   const waktu = document.getElementById('waktu').value;
   const noExcavator = document.getElementById('noExcavator').value.trim();
+  const namaOperator = document.getElementById('namaOperator').value.trim();
+  const jenisMaterial = document.getElementById('jenisMaterial').value;
   const jumlahHD = parseFloat(document.getElementById('jumlahHD').value) || 0;
   const cycleTimeHauler = parseFloat(document.getElementById('cycleTimeHauler').value) || 0;
   const cycleTimeLoader = parseFloat(document.getElementById('cycleTimeLoader').value) || 0;
 
   // Validation
-  if (!namaPengawas || !nrp || !noExcavator) {
-    showAlert('Mohon lengkapi Data Umum (Nama Pengawas, NRP, dan No Excavator)', 'error');
+  if (!namaPengawas || !nrp || !noExcavator || !namaOperator || !jenisMaterial) {
+    showAlert('Mohon lengkapi Data Umum (Nama Pengawas, NRP, No Excavator, Nama Operator, dan Jenis Material)', 'error');
     return;
   }
 
@@ -2297,6 +2559,8 @@ function calculateMatchFactor() {
     nrp,
     waktu: waktu || new Date().toISOString().slice(0, 16),
     noExcavator,
+    namaOperator,
+    jenisMaterial,
     jumlahHD,
     cycleTimeHauler,
     cycleTimeLoader,
@@ -2340,7 +2604,7 @@ function renderProductivityTable(filteredData = null) {
   if (data.length === 0) {
     tbody.innerHTML = `
       <tr class="empty-state">
-        <td colspan="12" class="px-6 py-12 text-center">
+        <td colspan="14" class="px-6 py-12 text-center">
           <div class="flex flex-col items-center justify-center">
             <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
               <i class="fas fa-inbox text-gray-400 text-2xl"></i>
@@ -2377,6 +2641,12 @@ function renderProductivityTable(filteredData = null) {
             <td class="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap">
                 <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                     ${item.noExcavator}
+                </span>
+            </td>
+            <td class="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-700">${item.namaOperator || '-'}</td>
+            <td class="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                    ${item.jenisMaterial || '-'}
                 </span>
             </td>
             <td class="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-700 text-right">${item.jumlahRitase}</td>
@@ -2449,7 +2719,7 @@ function renderMatchFactorTable(filteredData = null) {
   if (data.length === 0) {
     tbody.innerHTML = `
       <tr class="empty-state">
-        <td colspan="10" class="px-6 py-12 text-center">
+        <td colspan="12" class="px-6 py-12 text-center">
           <div class="flex flex-col items-center justify-center">
             <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
               <i class="fas fa-inbox text-gray-400 text-2xl"></i>
@@ -2493,6 +2763,12 @@ function renderMatchFactorTable(filteredData = null) {
             <td class="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap">
                 <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                     ${item.noExcavator}
+                </span>
+            </td>
+            <td class="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-700">${item.namaOperator || '-'}</td>
+            <td class="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                    ${item.jenisMaterial || '-'}
                 </span>
             </td>
             <td class="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-700 text-right">${item.jumlahHD}</td>
@@ -2554,6 +2830,49 @@ function renderMatchFactorTable(filteredData = null) {
 // ==========================================
 // Issues Table Rendering
 // ==========================================
+
+// Check if an issue is orphaned (no matching productivity/match factor record)
+function isOrphanedIssue(issue) {
+  // If no timestamp, not orphaned (could be a general note)
+  if (!issue.timestamp) return false;
+
+  const issueTime = new Date(issue.timestamp);
+  const issueExcavator = issue.excavator;
+
+  // Check if there's a matching Productivity record
+  const hasProductivityMatch = AppState.productivityData.some(record => {
+    if (record.noExcavator !== issueExcavator) return false;
+
+    if (record.waktu) {
+      const recordTime = new Date(record.waktu);
+      // Match if same hour on same date
+      return issueTime.getHours() === recordTime.getHours() &&
+        issueTime.getDate() === recordTime.getDate() &&
+        issueTime.getMonth() === recordTime.getMonth() &&
+        issueTime.getFullYear() === recordTime.getFullYear();
+    }
+    return false;
+  });
+
+  // Check if there's a matching Match Factor record
+  const hasMatchFactorMatch = AppState.matchFactorData.some(record => {
+    if (record.noExcavator !== issueExcavator) return false;
+
+    if (record.waktu) {
+      const recordTime = new Date(record.waktu);
+      // Match if same hour on same date
+      return issueTime.getHours() === recordTime.getHours() &&
+        issueTime.getDate() === recordTime.getDate() &&
+        issueTime.getMonth() === recordTime.getMonth() &&
+        issueTime.getFullYear() === recordTime.getFullYear();
+    }
+    return false;
+  });
+
+  // Orphaned if no match in either table
+  return !hasProductivityMatch && !hasMatchFactorMatch;
+}
+
 function renderIssuesTable(filteredData = null) {
   const tbody = document.getElementById('issuesTableBody');
   const issuesCount = document.getElementById('issuesCount');
@@ -2604,38 +2923,114 @@ function renderIssuesTable(filteredData = null) {
       minute: '2-digit'
     });
 
-    // Build Delay Problem text
-    let delayText = '-';
-    if (issue.delay) {
-      delayText = `<div class="text-xs">
-        <div class="font-semibold text-red-700">${issue.delay.mainCode}: ${issue.delay.mainLabel}</div>`;
+    // Build Delay Problem with expandable count badge (supports multiple delays)
+    const delays = getIssueDelays(issue);
+    const delayId = `delay-${issue.id || index}`;
+    let delayText = '';
 
-      if (issue.delay.subCode && issue.delay.subLabel) {
-        delayText += `<div class="text-gray-600 mt-1">${issue.delay.subCode} - ${issue.delay.subLabel}</div>`;
-      }
+    if (delays.length === 0) {
+      delayText = '<div class="p-2 text-center"><span class="text-gray-400 text-xs">-</span></div>';
+    } else if (delays.length === 1) {
+      // Single delay - show directly without expand button
+      const delay = delays[0];
+      delayText = `
+        <div class="text-xs p-2">
+          <div class="font-semibold text-red-700">${delay.mainCode}: ${delay.mainLabel}</div>
+          ${delay.subCode && delay.subLabel ? `<div class="text-gray-600 mt-1">${delay.subCode} - ${delay.subLabel}</div>` : ''}
+          ${delay.customText ? `<div class="text-gray-500 italic mt-1">${delay.customText}</div>` : ''}
+        </div>
+      `;
+    } else {
+      // Multiple delays - use expandable count badge
+      const delaysList = delays.map((delay, idx) => {
+        let html = '';
 
-      if (issue.delay.customText) {
-        delayText += `<div class="text-gray-500 italic mt-1">${issue.delay.customText}</div>`;
-      }
+        // Add divider before all items except the first
+        if (idx > 0) {
+          html += '<div class="border-t border-red-200 pt-2 mt-2"></div>';
+        }
 
-      delayText += '</div>';
+        html += `<div class="text-xs">
+          <div class="font-semibold text-red-700">${delay.mainCode}: ${delay.mainLabel}</div>`;
+        if (delay.subCode && delay.subLabel) {
+          html += `<div class="text-gray-600 mt-1">${delay.subCode} - ${delay.subLabel}</div>`;
+        }
+        if (delay.customText) {
+          html += `<div class="text-gray-500 italic mt-1">${delay.customText}</div>`;
+        }
+        html += '</div>';
+        return html;
+      }).join('');
+
+      delayText = `
+        <div class="relative">
+          <button
+            onclick="toggleIssueDetails('${delayId}')"
+            class="flex items-center gap-2 hover:bg-red-50 px-2 py-1.5 rounded transition-all w-full text-left">
+            <span class="w-2 h-2 bg-red-500 rounded-full flex-shrink-0"></span>
+            <span class="font-semibold text-sm text-red-700">${delays.length} Delays</span>
+            <i class="fas fa-chevron-down text-xs transition-transform duration-200 ml-auto text-red-600" id="${delayId}-icon"></i>
+          </button>
+          <div id="${delayId}-content" class="hidden mt-2 pl-4 border-l-2 border-red-300 pb-2">
+            ${delaysList}
+          </div>
+        </div>
+      `;
     }
 
-    // Build Productivity Problem text
-    let productivityText = '-';
-    if (issue.productivity) {
-      productivityText = `<div class="text-xs">
-        <div class="font-semibold text-green-700">Kat. ${issue.productivity.mainCode}: ${issue.productivity.mainLabel}</div>`;
+    // Build Productivity Problem with expandable count badge (supports multiple productivities)
+    const productivities = getIssueProductivities(issue);
+    const prodId = `prod-${issue.id || index}`;
+    let productivityText = '';
 
-      if (issue.productivity.subOption) {
-        productivityText += `<div class="text-gray-600 mt-1">${issue.productivity.subOption}</div>`;
-      }
+    if (productivities.length === 0) {
+      productivityText = '<div class="p-2 text-center"><span class="text-gray-400 text-xs">-</span></div>';
+    } else if (productivities.length === 1) {
+      // Single productivity - show directly without expand button
+      const prod = productivities[0];
+      productivityText = `
+        <div class="text-xs p-2">
+          <div class="font-semibold text-orange-700">Kat. ${prod.mainCode}: ${prod.mainLabel}</div>
+          ${prod.subOption ? `<div class="text-gray-600 mt-1">${prod.subOption}</div>` : ''}
+          ${prod.customText ? `<div class="text-gray-500 italic mt-1">${prod.customText}</div>` : ''}
+        </div>
+      `;
+    } else {
+      // Multiple productivities - use expandable count badge
+      const prodList = productivities.map((prod, idx) => {
+        let html = '';
 
-      if (issue.productivity.customText) {
-        productivityText += `<div class="text-gray-500 italic mt-1">${issue.productivity.customText}</div>`;
-      }
+        // Add divider before all items except the first
+        if (idx > 0) {
+          html += '<div class="border-t border-orange-200 pt-2 mt-2"></div>';
+        }
 
-      productivityText += '</div>';
+        html += `<div class="text-xs">
+          <div class="font-semibold text-orange-700">Kat. ${prod.mainCode}: ${prod.mainLabel}</div>`;
+        if (prod.subOption) {
+          html += `<div class="text-gray-600 mt-1">${prod.subOption}</div>`;
+        }
+        if (prod.customText) {
+          html += `<div class="text-gray-500 italic mt-1">${prod.customText}</div>`;
+        }
+        html += '</div>';
+        return html;
+      }).join('');
+
+      productivityText = `
+        <div class="relative">
+          <button
+            onclick="toggleIssueDetails('${prodId}')"
+            class="flex items-center gap-2 hover:bg-orange-50 px-2 py-1.5 rounded transition-all w-full text-left">
+            <span class="w-2 h-2 bg-orange-500 rounded-full flex-shrink-0"></span>
+            <span class="font-semibold text-sm text-orange-700">${productivities.length} Problems</span>
+            <i class="fas fa-chevron-down text-xs transition-transform duration-200 ml-auto text-orange-600" id="${prodId}-icon"></i>
+          </button>
+          <div id="${prodId}-content" class="hidden mt-2 pl-4 border-l-2 border-orange-300 pb-2">
+            ${prodList}
+          </div>
+        </div>
+      `;
     }
 
     // Notes - Better UX with clear separation
@@ -2719,17 +3114,29 @@ function renderIssuesTable(filteredData = null) {
     const photoCount = documentationPhotoCount + followUpPhotoCount;
 
     const photoHtml = photoCount > 0
-      ? `<button 
-          onclick="viewIssuePhotos(${originalIndex})" 
+      ? `<button
+          onclick="viewIssuePhotos(${originalIndex})"
           class="px-3 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1.5">
           <i class="fas fa-images"></i>
           <span>Lihat (${photoCount})</span>
         </button>`
       : '<span class="text-gray-400 text-xs">-</span>';
 
+    // Check if issue is orphaned (no matching productivity/match factor record)
+    const isOrphaned = isOrphanedIssue(issue);
+    const orphanedBadge = isOrphaned
+      ? `<div class="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-[10px] font-semibold" title="Issue ini tidak memiliki record Productivity atau Match Factor yang sesuai">
+          <i class="fas fa-exclamation-triangle text-amber-600"></i>
+          <span>No Record</span>
+        </div>`
+      : '';
+
     row.innerHTML = `
       <td class="px-3 sm:px-4 py-3 whitespace-nowrap text-xs sm:text-sm text-gray-700 font-semibold">${index + 1}</td>
-      <td class="px-3 sm:px-4 py-3 whitespace-nowrap text-xs sm:text-sm text-gray-600">${formattedTime}</td>
+      <td class="px-3 sm:px-4 py-3 text-xs sm:text-sm text-gray-600">
+        <div>${formattedTime}</div>
+        ${orphanedBadge}
+      </td>
       <td class="px-3 sm:px-4 py-3 whitespace-nowrap">
         <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">${issue.excavator}</span>
       </td>
@@ -3115,6 +3522,27 @@ window.toggleNotesExpand = function (noteId) {
   }
 };
 
+// Toggle expand/collapse for delay and productivity details in Issues table
+window.toggleIssueDetails = function (detailId) {
+  const content = document.getElementById(`${detailId}-content`);
+  const icon = document.getElementById(`${detailId}-icon`);
+
+  if (!content || !icon) return;
+
+  if (content.classList.contains('hidden')) {
+    // Expand
+    content.classList.remove('hidden');
+    icon.style.transform = 'rotate(180deg)';
+
+    // Smooth animation
+    content.style.animation = 'slideDown 0.2s ease-out';
+  } else {
+    // Collapse
+    content.classList.add('hidden');
+    icon.style.transform = 'rotate(0deg)';
+  }
+};
+
 // Edit Issue
 window.editIssue = async function (index) {
   const issue = AppState.issuesData[index];
@@ -3137,16 +3565,10 @@ window.editIssue = async function (index) {
 
   // Populate form fields
   const excavatorSelect = document.getElementById('issueExcavatorSelect');
-  const delayMainCategory = document.getElementById('delayMainCategory');
-  const delaySubCategory = document.getElementById('delaySubCategory');
-  const delayCustomText = document.getElementById('delayCustomText');
-  const productivityMainCategory = document.getElementById('productivityMainCategory');
-  const productivitySubCategory = document.getElementById('productivitySubCategory');
-  const productivityCustomText = document.getElementById('productivityCustomText');
   const additionalNotes = document.getElementById('issueAdditionalNotes');
   const followUpNotes = document.getElementById('followUpNotes');
 
-  // First, populate all dropdowns (excavator, delay, productivity)
+  // First, populate excavator dropdown
   // Populate Excavator Options
   excavatorSelect.innerHTML = '<option value="">-- Pilih Excavator --</option>';
   const excavators = new Set();
@@ -3158,24 +3580,6 @@ window.editIssue = async function (index) {
     option.value = ex;
     option.textContent = ex;
     excavatorSelect.appendChild(option);
-  });
-
-  // Populate Delay Options
-  delayMainCategory.innerHTML = '<option value="">-- Pilih Kategori --</option>';
-  Object.keys(DELAY_OPTIONS).forEach(key => {
-    const option = document.createElement('option');
-    option.value = key;
-    option.textContent = key === 'D0' ? 'Tidak Ada' : `${key} - ${DELAY_OPTIONS[key].label}`;
-    delayMainCategory.appendChild(option);
-  });
-
-  // Populate Productivity Options
-  productivityMainCategory.innerHTML = '<option value="">-- Pilih Kategori --</option>';
-  Object.keys(PRODUCTIVITY_OPTIONS).forEach(key => {
-    const option = document.createElement('option');
-    option.value = key;
-    option.textContent = key === '0' ? 'Tidak Ada' : `Kategori ${key}: ${PRODUCTIVITY_OPTIONS[key].label}`;
-    productivityMainCategory.appendChild(option);
   });
 
   // Set excavator
@@ -3194,38 +3598,34 @@ window.editIssue = async function (index) {
     }
   }
 
-  // Set delay problem
-  if (issue.delay) {
-    delayMainCategory.value = issue.delay.mainCode;
-    delayMainCategory.dispatchEvent(new Event('change')); // Trigger to show sub-category
-
-    // Wait a moment for sub-category to populate
-    setTimeout(() => {
-      if (issue.delay.subCode) {
-        delaySubCategory.value = issue.delay.subCode;
-        delaySubCategory.dispatchEvent(new Event('change'));
-      }
-      if (issue.delay.customText) {
-        delayCustomText.value = issue.delay.customText;
-      }
-    }, 100);
+  // Load delay problems (with backward compatibility)
+  const delaysToLoad = issue.delays || (issue.delay ? [issue.delay] : []);
+  if (delaysToLoad.length > 0) {
+    delayItems = delaysToLoad.map(delay => ({
+      id: Date.now() + Math.random(),
+      mainCode: delay.mainCode || '',
+      subCode: delay.subCode || '',
+      customText: delay.customText || ''
+    }));
+    renderDelayItems();
+  } else {
+    delayItems = [createDelayItem(0)];
+    renderDelayItems();
   }
 
-  // Set productivity problem
-  if (issue.productivity) {
-    productivityMainCategory.value = issue.productivity.mainCode;
-    productivityMainCategory.dispatchEvent(new Event('change')); // Trigger to show sub-category
-
-    // Wait a moment for sub-category to populate
-    setTimeout(() => {
-      if (issue.productivity.subOption) {
-        productivitySubCategory.value = issue.productivity.subOption;
-        productivitySubCategory.dispatchEvent(new Event('change'));
-      }
-      if (issue.productivity.customText) {
-        productivityCustomText.value = issue.productivity.customText;
-      }
-    }, 100);
+  // Load productivity problems (with backward compatibility)
+  const productivitiesToLoad = issue.productivities || (issue.productivity ? [issue.productivity] : []);
+  if (productivitiesToLoad.length > 0) {
+    productivityItems = productivitiesToLoad.map(productivity => ({
+      id: Date.now() + Math.random(),
+      mainCode: productivity.mainCode || '',
+      subOption: productivity.subOption || '',
+      customText: productivity.customText || ''
+    }));
+    renderProductivityItems();
+  } else {
+    productivityItems = [createProductivityItem(0)];
+    renderProductivityItems();
   }
 
   // Set notes
@@ -3291,12 +3691,19 @@ window.deleteIssue = function (index) {
   const timestamp = new Date(issue.timestamp).toLocaleString('id-ID');
   const excavator = issue.excavator;
 
+  const delays = getIssueDelays(issue);
+  const productivities = getIssueProductivities(issue);
+
   let problemSummary = '';
-  if (issue.delay) {
-    problemSummary += `• Delay: ${issue.delay.mainCode} - ${issue.delay.mainLabel}\n`;
+  if (delays.length > 0) {
+    delays.forEach((delay, i) => {
+      problemSummary += `• Delay ${i + 1}: ${delay.mainCode} - ${delay.mainLabel}\n`;
+    });
   }
-  if (issue.productivity) {
-    problemSummary += `• Productivity: Kat. ${issue.productivity.mainCode} - ${issue.productivity.mainLabel}\n`;
+  if (productivities.length > 0) {
+    productivities.forEach((prod, i) => {
+      problemSummary += `• Productivity ${i + 1}: Kat. ${prod.mainCode} - ${prod.mainLabel}\n`;
+    });
   }
 
   const dataPreview = `
@@ -3392,29 +3799,11 @@ window.viewIssuesForExcavatorAndDate = function (excavator, dateStr) {
       minute: '2-digit'
     });
 
-    // Build delay text
-    let delayHTML = '<span class="text-gray-400 text-sm">-</span>';
-    if (issue.delay) {
-      delayHTML = `
-        <div class="text-sm">
-          <div class="font-semibold text-red-700">${issue.delay.mainCode}: ${issue.delay.mainLabel}</div>
-          ${issue.delay.subCode && issue.delay.subLabel ? `<div class="text-gray-600 mt-1">${issue.delay.subCode} - ${issue.delay.subLabel}</div>` : ''}
-          ${issue.delay.customText ? `<div class="text-gray-500 italic mt-1">${issue.delay.customText}</div>` : ''}
-        </div>
-      `;
-    }
+    // Build delay text (supports multiple)
+    const delayHTML = `<div class="text-sm">${formatDelaysHTML(issue, '<div class="mt-3 pt-3 border-t border-red-200"></div>')}</div>`;
 
-    // Build productivity text
-    let prodHTML = '<span class="text-gray-400 text-sm">-</span>';
-    if (issue.productivity) {
-      prodHTML = `
-        <div class="text-sm">
-          <div class="font-semibold text-green-700">Kat. ${issue.productivity.mainCode}: ${issue.productivity.mainLabel}</div>
-          ${issue.productivity.subOption ? `<div class="text-gray-600 mt-1">${issue.productivity.subOption}</div>` : ''}
-          ${issue.productivity.customText ? `<div class="text-gray-500 italic mt-1">${issue.productivity.customText}</div>` : ''}
-        </div>
-      `;
-    }
+    // Build productivity text (supports multiple)
+    const prodHTML = `<div class="text-sm">${formatProductivitiesHTML(issue, '<div class="mt-3 pt-3 border-t border-green-200"></div>')}</div>`;
 
     // Photo count (both Dokumentasi Masalah and Follow Up)
     const documentationPhotoCount = (issue.imageIds && issue.imageIds.length) || 0;
@@ -4090,30 +4479,37 @@ function editData(type, index) {
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-clock text-blue-500 mr-2"></i>Waktu
+                    </label>
+                    <input type="datetime-local" id="editWaktu" value="${data.waktu}"
+                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
                         <i class="fas fa-hashtag text-blue-500 mr-2"></i>Jumlah Ritase
                     </label>
-                    <input type="number" id="editJumlahRitase" value="${data.jumlahRitase}" 
+                    <input type="number" id="editJumlahRitase" value="${data.jumlahRitase}"
                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200">
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">
                         <i class="fas fa-gauge text-blue-500 mr-2"></i>HM Awal
                     </label>
-                    <input type="number" id="editHmAwal" value="${data.hmAwal}" step="0.01" 
+                    <input type="number" id="editHmAwal" value="${data.hmAwal}" step="0.01"
                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200">
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">
                         <i class="fas fa-gauge-high text-blue-500 mr-2"></i>HM Akhir
                     </label>
-                    <input type="number" id="editHmAkhir" value="${data.hmAkhir}" step="0.01" 
+                    <input type="number" id="editHmAkhir" value="${data.hmAkhir}" step="0.01"
                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200">
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">
                         <i class="fas fa-box text-blue-500 mr-2"></i>Kapasitas (BCM)
                     </label>
-                    <input type="number" id="editKapasitas" value="${data.kapasitas}" step="0.01" 
+                    <input type="number" id="editKapasitas" value="${data.kapasitas}" step="0.01"
                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200">
                 </div>
             </div>
@@ -4123,23 +4519,30 @@ function editData(type, index) {
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-truck text-purple-500 mr-2"></i>Jumlah HD
+                        <i class="fas fa-clock text-purple-500 mr-2"></i>Waktu
                     </label>
-                    <input type="number" id="editJumlahHD" value="${data.jumlahHD}" 
+                    <input type="datetime-local" id="editWaktuMF" value="${data.waktu}"
                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-200">
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-clock text-purple-500 mr-2"></i>Cycle Time Hauler (menit)
+                        <i class="fas fa-truck text-purple-500 mr-2"></i>Jumlah HD
                     </label>
-                    <input type="number" id="editCycleTimeHauler" value="${data.cycleTimeHauler}" step="0.01" 
+                    <input type="number" id="editJumlahHD" value="${data.jumlahHD}"
+                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-200">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-hourglass-start text-purple-500 mr-2"></i>Cycle Time Hauler (menit)
+                    </label>
+                    <input type="number" id="editCycleTimeHauler" value="${data.cycleTimeHauler}" step="0.01"
                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-200">
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">
                         <i class="fas fa-hourglass-half text-purple-500 mr-2"></i>Cycle Time Loader (menit)
                     </label>
-                    <input type="number" id="editCycleTimeLoader" value="${data.cycleTimeLoader}" step="0.01" 
+                    <input type="number" id="editCycleTimeLoader" value="${data.cycleTimeLoader}" step="0.01"
                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-200">
                 </div>
             </div>
@@ -4173,6 +4576,7 @@ function saveEdit() {
   const index = AppState.currentEditIndex;
 
   if (type === 'productivity') {
+    const waktu = document.getElementById('editWaktu').value;
     const jumlahRitase = parseFloat(document.getElementById('editJumlahRitase').value);
     const hmAwal = parseFloat(document.getElementById('editHmAwal').value);
     const hmAkhir = parseFloat(document.getElementById('editHmAkhir').value);
@@ -4183,6 +4587,7 @@ function saveEdit() {
 
     AppState.productivityData[index] = {
       ...AppState.productivityData[index],
+      waktu,
       jumlahRitase,
       hmAwal,
       hmAkhir,
@@ -4194,6 +4599,7 @@ function saveEdit() {
     renderProductivityTable();
     updateProductivityChart();
   } else {
+    const waktu = document.getElementById('editWaktuMF').value;
     const jumlahHD = parseFloat(document.getElementById('editJumlahHD').value);
     const cycleTimeHauler = parseFloat(document.getElementById('editCycleTimeHauler').value);
     const cycleTimeLoader = parseFloat(document.getElementById('editCycleTimeLoader').value);
@@ -4202,6 +4608,7 @@ function saveEdit() {
 
     AppState.matchFactorData[index] = {
       ...AppState.matchFactorData[index],
+      waktu,
       jumlahHD,
       cycleTimeHauler,
       cycleTimeLoader,
@@ -4481,6 +4888,8 @@ async function exportToExcel(type) {
         { header: 'NRP', key: 'nrp', width: 15 },
         { header: 'Waktu', key: 'waktu', width: 20 },
         { header: 'No Excavator', key: 'noExcavator', width: 15 },
+        { header: 'Operator', key: 'namaOperator', width: 20 },
+        { header: 'Jenis Material', key: 'jenisMaterial', width: 15 },
         { header: 'Ritase', key: 'jumlahRitase', width: 10 },
         { header: 'HM Awal', key: 'hmAwal', width: 10 },
         { header: 'HM Akhir', key: 'hmAkhir', width: 10 },
@@ -4511,6 +4920,8 @@ async function exportToExcel(type) {
         { header: 'NRP', key: 'nrp', width: 15 },
         { header: 'Waktu', key: 'waktu', width: 20 },
         { header: 'No Excavator', key: 'noExcavator', width: 15 },
+        { header: 'Operator', key: 'namaOperator', width: 20 },
+        { header: 'Jenis Material', key: 'jenisMaterial', width: 15 },
         { header: 'Jumlah HD', key: 'jumlahHD', width: 12 },
         { header: 'CT Hauler (min)', key: 'cycleTimeHauler', width: 15 },
         { header: 'CT Loader (min)', key: 'cycleTimeLoader', width: 15 },
@@ -4644,29 +5055,33 @@ async function exportToExcel(type) {
       for (let index = 0; index < sortedIssues.length; index++) {
         const issue = sortedIssues[index];
 
-        // Build Delay Problem text with full labels
-        let delayText = '-';
-        if (issue.delay) {
-          delayText = `${issue.delay.mainCode} - ${issue.delay.mainLabel}`;
-          if (issue.delay.subCode && issue.delay.subLabel) {
-            delayText += ` | ${issue.delay.subCode} - ${issue.delay.subLabel}`;
-          }
-          if (issue.delay.customText) {
-            delayText += ` | ${issue.delay.customText}`;
-          }
-        }
+        // Build Delay Problem text with full labels (supports multiple delays)
+        const delays = getIssueDelays(issue);
+        const delayText = delays.length > 0 ?
+          delays.map(delay => {
+            let text = `${delay.mainCode} - ${delay.mainLabel}`;
+            if (delay.subCode && delay.subLabel) {
+              text += ` | ${delay.subCode} - ${delay.subLabel}`;
+            }
+            if (delay.customText) {
+              text += ` | ${delay.customText}`;
+            }
+            return text;
+          }).join('\n') : '-';
 
-        // Build Productivity Problem text with full labels
-        let prodText = '-';
-        if (issue.productivity) {
-          prodText = `${issue.productivity.mainCode} - ${issue.productivity.mainLabel}`;
-          if (issue.productivity.subOption) {
-            prodText += ` | ${issue.productivity.subOption}`;
-          }
-          if (issue.productivity.customText) {
-            prodText += ` | ${issue.productivity.customText}`;
-          }
-        }
+        // Build Productivity Problem text with full labels (supports multiple productivities)
+        const productivities = getIssueProductivities(issue);
+        const prodText = productivities.length > 0 ?
+          productivities.map(prod => {
+            let text = `${prod.mainCode} - ${prod.mainLabel}`;
+            if (prod.subOption) {
+              text += ` | ${prod.subOption}`;
+            }
+            if (prod.customText) {
+              text += ` | ${prod.customText}`;
+            }
+            return text;
+          }).join('\n') : '-';
 
         const rowIndex = issueSheet.addRow({
           no: index + 1,
@@ -4864,7 +5279,7 @@ async function exportToPDF(type) {
     let headers = [];
 
     if (type === 'productivity') {
-      headers = [['No', 'Pengawas', 'NRP', 'Waktu', 'No Excavator', 'Ritase', 'HM Awal', 'HM Akhir', 'Durasi (Jam)', 'Kapasitas (BCM)', 'Productivity (BCM/Jam)', 'WH (Menit)', 'Delay (Menit)']];
+      headers = [['No', 'Pengawas', 'NRP', 'Waktu', 'No Excavator', 'Operator', 'Jenis Material', 'Ritase', 'HM Awal', 'HM Akhir', 'Durasi (Jam)', 'Kapasitas (BCM)', 'Productivity (BCM/Jam)', 'WH (Menit)', 'Delay (Menit)']];
       tableData = data.map((item, index) => {
         const selisihHM = parseFloat(item.hmAkhir) - parseFloat(item.hmAwal);
         const whTarget = Math.ceil(selisihHM);
@@ -4876,6 +5291,8 @@ async function exportToPDF(type) {
           item.nrp,
           formatDateTime(item.waktu),
           item.noExcavator,
+          item.namaOperator || '-',
+          item.jenisMaterial || '-',
           item.jumlahRitase,
           item.hmAwal,
           item.hmAkhir,
@@ -4887,13 +5304,15 @@ async function exportToPDF(type) {
         ];
       });
     } else {
-      headers = [['No', 'Pengawas', 'NRP', 'Waktu', 'No Excavator', 'Jml HD', 'CT Hauler (min)', 'CT Loader (min)', 'Match Factor']];
+      headers = [['No', 'Pengawas', 'NRP', 'Waktu', 'No Excavator', 'Operator', 'Jenis Material', 'Jml HD', 'CT Hauler (min)', 'CT Loader (min)', 'Match Factor']];
       tableData = data.map((item, index) => [
         index + 1,
         item.namaPengawas,
         item.nrp,
         formatDateTime(item.waktu),
         item.noExcavator,
+        item.namaOperator || '-',
+        item.jenisMaterial || '-',
         item.jumlahHD,
         item.cycleTimeHauler,
         item.cycleTimeLoader,
@@ -5313,10 +5732,15 @@ async function sharePDFToWhatsApp(type) {
   }
 
   // Check if Web Share API is supported
-  if (!navigator.share && !navigator.canShare) {
-    showAlert('Browser Anda tidak mendukung fitur berbagi. Silakan gunakan Export PDF.', 'warning');
-    return;
-  }
+  // Note: We check support but don't block - fallback to download if sharing unavailable
+  const webShareSupported = typeof navigator.share === 'function';
+  const canShareFiles = (file) => {
+    try {
+      return navigator.canShare && navigator.canShare({ files: [file] });
+    } catch {
+      return false;
+    }
+  };
 
   try {
     showAlert('Memproses PDF... mohon tunggu', 'info');
@@ -5359,7 +5783,7 @@ async function sharePDFToWhatsApp(type) {
     let headers = [];
 
     if (type === 'productivity') {
-      headers = [['No', 'Pengawas', 'NRP', 'Waktu', 'No Excavator', 'Ritase', 'HM Awal', 'HM Akhir', 'Durasi (Jam)', 'Kapasitas (BCM)', 'Productivity (BCM/Jam)', 'WH (Menit)', 'Delay (Menit)']];
+      headers = [['No', 'Pengawas', 'NRP', 'Waktu', 'No Excavator', 'Operator', 'Jenis Material', 'Ritase', 'HM Awal', 'HM Akhir', 'Durasi (Jam)', 'Kapasitas (BCM)', 'Productivity (BCM/Jam)', 'WH (Menit)', 'Delay (Menit)']];
       tableData = data.map((item, index) => {
         const selisihHM = parseFloat(item.hmAkhir) - parseFloat(item.hmAwal);
         const whTarget = Math.ceil(selisihHM);
@@ -5371,6 +5795,8 @@ async function sharePDFToWhatsApp(type) {
           item.nrp,
           formatDateTime(item.waktu),
           item.noExcavator,
+          item.namaOperator || '-',
+          item.jenisMaterial || '-',
           item.jumlahRitase,
           item.hmAwal,
           item.hmAkhir,
@@ -5382,13 +5808,15 @@ async function sharePDFToWhatsApp(type) {
         ];
       });
     } else {
-      headers = [['No', 'Pengawas', 'NRP', 'Waktu', 'No Excavator', 'Jml HD', 'CT Hauler (min)', 'CT Loader (min)', 'Match Factor']];
+      headers = [['No', 'Pengawas', 'NRP', 'Waktu', 'No Excavator', 'Operator', 'Jenis Material', 'Jml HD', 'CT Hauler (min)', 'CT Loader (min)', 'Match Factor']];
       tableData = data.map((item, index) => [
         index + 1,
         item.namaPengawas,
         item.nrp,
         formatDateTime(item.waktu),
         item.noExcavator,
+        item.namaOperator || '-',
+        item.jenisMaterial || '-',
         item.jumlahHD,
         item.cycleTimeHauler,
         item.cycleTimeLoader,
@@ -5777,16 +6205,7 @@ async function sharePDFToWhatsApp(type) {
     // Create File object from blob
     const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
-    // Check if the file can be shared
-    if (navigator.canShare && !navigator.canShare({ files: [pdfFile] })) {
-      showAlert('Browser Anda tidak mendukung berbagi file PDF', 'warning');
-      // Fallback to download
-      doc.save(fileName);
-      showAlert('PDF berhasil didownload sebagai alternatif', 'success');
-      return;
-    }
-
-    // Generate summary text for sharing
+    // Generate summary text for sharing (do this BEFORE sharing attempt so clipboard is ready)
     const excavatorList = [...new Set(data.map(d => d.noExcavator))];
     const pengawasList = [...new Set(data.map(d => d.namaPengawas))];
 
@@ -5845,6 +6264,8 @@ async function sharePDFToWhatsApp(type) {
           const wh = selisihHM * 60;
 
           summaryText += `${String.fromCharCode(65 + idx)}. Jam ${timeStr} (${record.productivity} BCM/Jam)\n`;
+          summaryText += `   • Operator: ${record.namaOperator || '-'}\n`;
+          summaryText += `   • Jenis Material: ${record.jenisMaterial || '-'}\n`;
           summaryText += `   • Ritase: ${record.jumlahRitase}\n`;
           summaryText += `   • HM Awal: ${record.hmAwal}\n`;
           summaryText += `   • HM Akhir: ${record.hmAkhir}\n`;
@@ -5861,16 +6282,12 @@ async function sharePDFToWhatsApp(type) {
               const issueTime = new Date(issue.timestamp);
               const recordTime = new Date(record.waktu);
 
-              // Match if same hour on the same date, OR within 1 hour window
+              // Match only if same hour on the same date
               const sameHour = issueTime.getHours() === recordTime.getHours() &&
                 issueTime.getDate() === recordTime.getDate() &&
                 issueTime.getMonth() === recordTime.getMonth();
 
-              const timeDiffMs = Math.abs(issueTime - recordTime);
-              const timeDiffHours = timeDiffMs / (1000 * 60 * 60);
-              const withinOneHour = timeDiffHours <= 1;
-
-              return sameHour || withinOneHour;
+              return sameHour;
             }
 
             // If no time on issue, still include if same excavator
@@ -5878,47 +6295,48 @@ async function sharePDFToWhatsApp(type) {
           });
 
           if (relatedIssues.length > 0) {
-            // Collect all delay problems
+            // Collect all delay problems (supports multiple delays per issue)
             const delayProblems = [];
             const prodProblems = [];
 
             relatedIssues.forEach(issue => {
-              if (issue.delay) {
-                let delayText = `${issue.delay.mainCode} ‧ ${issue.delay.mainLabel}`;
-                if (issue.delay.subLabel) delayText += ` - ${issue.delay.subLabel}`;
-                if (issue.delay.customText) delayText += ` (${issue.delay.customText})`;
+              // Get all delays from this issue (with backward compatibility)
+              const delays = getIssueDelays(issue);
+              delays.forEach(delay => {
+                let delayText = `${delay.mainCode} ‧ ${delay.mainLabel}`;
+                if (delay.subLabel) delayText += ` - ${delay.subLabel}`;
+                if (delay.customText) delayText += ` (${delay.customText})`;
                 delayProblems.push(delayText);
-              }
-              if (issue.productivity) {
-                let prodText = `Kat. ${issue.productivity.mainCode} ‧ ${issue.productivity.mainLabel}`;
-                if (issue.productivity.subOption) prodText += ` - ${issue.productivity.subOption}`;
-                if (issue.productivity.customText) prodText += ` (${issue.productivity.customText})`;
+              });
+
+              // Get all productivities from this issue (with backward compatibility)
+              const productivities = getIssueProductivities(issue);
+              productivities.forEach(prod => {
+                let prodText = `Kat. ${prod.mainCode} ‧ ${prod.mainLabel}`;
+                if (prod.subOption) prodText += ` - ${prod.subOption}`;
+                if (prod.customText) prodText += ` (${prod.customText})`;
                 prodProblems.push(prodText);
-              }
+              });
             });
 
+            // Remove duplicates
+            const uniqueDelayProblems = [...new Set(delayProblems)];
+            const uniqueProdProblems = [...new Set(prodProblems)];
+
             // Format Delay Problems
-            if (delayProblems.length > 0) {
-              if (delayProblems.length === 1) {
-                summaryText += `   • Problem Delay: ${delayProblems[0]}\n`;
-              } else {
-                summaryText += `   • Problem Delay:\n`;
-                delayProblems.forEach(problem => {
-                  summaryText += `~ ${problem}\n`;
-                });
-              }
+            if (uniqueDelayProblems.length > 0) {
+              summaryText += `   • Problem Delay:\n`;
+              uniqueDelayProblems.forEach(problem => {
+                summaryText += `     ~ ${problem}\n`;
+              });
             }
 
             // Format Productivity Problems
-            if (prodProblems.length > 0) {
-              if (prodProblems.length === 1) {
-                summaryText += `   • Problem Productivity: ${prodProblems[0]}\n`;
-              } else {
-                summaryText += `   • Problem Productivity:\n`;
-                prodProblems.forEach(problem => {
-                  summaryText += `~ ${problem}\n`;
-                });
-              }
+            if (uniqueProdProblems.length > 0) {
+              summaryText += `   • Problem Productivity:\n`;
+              uniqueProdProblems.forEach(problem => {
+                summaryText += `     ~ ${problem}\n`;
+              });
             }
           }
           summaryText += `\n`;
@@ -5970,7 +6388,12 @@ async function sharePDFToWhatsApp(type) {
           const time = new Date(record.waktu);
           const timeStr = time.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false });
 
-          summaryText += `${String.fromCharCode(65 + idx)}. Jam ${timeStr} (${record.matchFactor})\n`;
+          summaryText += `${String.fromCharCode(65 + idx)}. Jam ${timeStr} (MF: ${record.matchFactor})\n`;
+          summaryText += `   • Operator: ${record.namaOperator || '-'}\n`;
+          summaryText += `   • Jenis Material: ${record.jenisMaterial || '-'}\n`;
+          summaryText += `   • Jumlah HD: ${record.jumlahHD}\n`;
+          summaryText += `   • CT Hauler: ${record.cycleTimeHauler} min\n`;
+          summaryText += `   • CT Loader: ${record.cycleTimeLoader} min\n`;
 
           // Find related issues for this excavator
           const relatedIssues = AppState.issuesData.filter(issue => {
@@ -5982,16 +6405,12 @@ async function sharePDFToWhatsApp(type) {
               const issueTime = new Date(issue.timestamp);
               const recordTime = new Date(record.waktu);
 
-              // Match if same hour on the same date, OR within 1 hour window
+              // Match only if same hour on the same date
               const sameHour = issueTime.getHours() === recordTime.getHours() &&
                 issueTime.getDate() === recordTime.getDate() &&
                 issueTime.getMonth() === recordTime.getMonth();
 
-              const timeDiffMs = Math.abs(issueTime - recordTime);
-              const timeDiffHours = timeDiffMs / (1000 * 60 * 60);
-              const withinOneHour = timeDiffHours <= 1;
-
-              return sameHour || withinOneHour;
+              return sameHour;
             }
 
             // If no time on issue, still include if same excavator
@@ -5999,47 +6418,48 @@ async function sharePDFToWhatsApp(type) {
           });
 
           if (relatedIssues.length > 0) {
-            // Collect all delay problems
+            // Collect all delay problems (supports multiple delays per issue)
             const delayProblems = [];
             const prodProblems = [];
 
             relatedIssues.forEach(issue => {
-              if (issue.delay) {
-                let delayText = `${issue.delay.mainCode} ‧ ${issue.delay.mainLabel}`;
-                if (issue.delay.subLabel) delayText += ` - ${issue.delay.subLabel}`;
-                if (issue.delay.customText) delayText += ` (${issue.delay.customText})`;
+              // Get all delays from this issue (with backward compatibility)
+              const delays = getIssueDelays(issue);
+              delays.forEach(delay => {
+                let delayText = `${delay.mainCode} ‧ ${delay.mainLabel}`;
+                if (delay.subLabel) delayText += ` - ${delay.subLabel}`;
+                if (delay.customText) delayText += ` (${delay.customText})`;
                 delayProblems.push(delayText);
-              }
-              if (issue.productivity) {
-                let prodText = `Kat. ${issue.productivity.mainCode} ‧ ${issue.productivity.mainLabel}`;
-                if (issue.productivity.subOption) prodText += ` - ${issue.productivity.subOption}`;
-                if (issue.productivity.customText) prodText += ` (${issue.productivity.customText})`;
+              });
+
+              // Get all productivities from this issue (with backward compatibility)
+              const productivities = getIssueProductivities(issue);
+              productivities.forEach(prod => {
+                let prodText = `Kat. ${prod.mainCode} ‧ ${prod.mainLabel}`;
+                if (prod.subOption) prodText += ` - ${prod.subOption}`;
+                if (prod.customText) prodText += ` (${prod.customText})`;
                 prodProblems.push(prodText);
-              }
+              });
             });
 
+            // Remove duplicates
+            const uniqueDelayProblems = [...new Set(delayProblems)];
+            const uniqueProdProblems = [...new Set(prodProblems)];
+
             // Format Delay Problems
-            if (delayProblems.length > 0) {
-              if (delayProblems.length === 1) {
-                summaryText += `   • Problem Delay: ${delayProblems[0]}\n`;
-              } else {
-                summaryText += `   • Problem Delay:\n`;
-                delayProblems.forEach(problem => {
-                  summaryText += `~ ${problem}\n`;
-                });
-              }
+            if (uniqueDelayProblems.length > 0) {
+              summaryText += `   • Problem Delay:\n`;
+              uniqueDelayProblems.forEach(problem => {
+                summaryText += `     ~ ${problem}\n`;
+              });
             }
 
             // Format Productivity Problems
-            if (prodProblems.length > 0) {
-              if (prodProblems.length === 1) {
-                summaryText += `   • Problem Productivity: ${prodProblems[0]}\n`;
-              } else {
-                summaryText += `   • Problem Productivity:\n`;
-                prodProblems.forEach(problem => {
-                  summaryText += `~ ${problem}\n`;
-                });
-              }
+            if (uniqueProdProblems.length > 0) {
+              summaryText += `   • Problem Productivity:\n`;
+              uniqueProdProblems.forEach(problem => {
+                summaryText += `     ~ ${problem}\n`;
+              });
             }
           }
           summaryText += `\n`;
@@ -6060,31 +6480,57 @@ async function sharePDFToWhatsApp(type) {
     summaryText += `\n━━━━━━━━━━━━━━━━━━━━\n`;
     summaryText += `📱 SmartzProd - Mining Productivity Tracker`;
 
-    // Copy summary text to clipboard first (Web Share API often ignores text when files are present)
+    // Copy summary text to clipboard FIRST (before any share attempt)
+    // This ensures caption is available regardless of share outcome
+    let clipboardSuccess = false;
     try {
-      await navigator.clipboard.writeText(summaryText);
-      showAlert('Teks ringkasan sudah disalin ke clipboard! Anda bisa paste saat membagikan PDF.', 'info');
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(summaryText);
+        clipboardSuccess = true;
+      }
     } catch (clipboardError) {
       console.warn('Could not copy to clipboard:', clipboardError);
-      // Continue with sharing even if clipboard fails
     }
 
-    // Share using Web Share API
-    await navigator.share({
-      title: title,
-      text: summaryText,
-      files: [pdfFile]
-    });
+    // Attempt to share using Web Share API with graceful fallback
+    if (webShareSupported && canShareFiles(pdfFile)) {
+      // Browser supports file sharing - use Web Share API
+      try {
+        await navigator.share({
+          files: [pdfFile]
+        });
 
-    showAlert('PDF berhasil dibagikan!', 'success');
-  } catch (error) {
-    if (error.name === 'AbortError') {
-      // User cancelled the share
-      showAlert('Pembagian dibatalkan', 'info');
+        if (clipboardSuccess) {
+          showAlert('PDF berhasil dibagikan! Caption sudah disalin ke clipboard.', 'success');
+        } else {
+          showAlert('PDF berhasil dibagikan!', 'success');
+        }
+      } catch (shareError) {
+        if (shareError.name === 'AbortError') {
+          showAlert('Pembagian dibatalkan', 'info');
+        } else {
+          // Share failed - fallback to download
+          console.warn('Share failed, falling back to download:', shareError);
+          doc.save(fileName);
+          if (clipboardSuccess) {
+            showAlert('Caption disalin ke clipboard! PDF diunduh karena sharing gagal.', 'success');
+          } else {
+            showAlert('PDF berhasil diunduh.', 'success');
+          }
+        }
+      }
     } else {
-      console.error('Share PDF error:', error);
-      showAlert('Gagal berbagi PDF: ' + error.message, 'error');
+      // Browser doesn't support file sharing - fallback to download
+      doc.save(fileName);
+      if (clipboardSuccess) {
+        showAlert('Caption disalin ke clipboard! PDF diunduh (browser tidak mendukung share file).', 'success');
+      } else {
+        showAlert('PDF berhasil diunduh.', 'success');
+      }
     }
+  } catch (error) {
+    console.error('Share PDF error:', error);
+    showAlert('Gagal memproses PDF: ' + error.message, 'error');
   }
 }
 
@@ -6426,11 +6872,15 @@ async function exportProductivityToPDF(excavatorId, productivityData, issuesData
 
     const issueHeaders = [['No', 'Waktu', 'Delay Problem', 'Productivity Problem', 'Catatan', 'Foto']];
     const issueTableData = issuesData.map((issue, index) => {
-      const delayText = issue.delay ?
-        `${issue.delay.mainCode}-${issue.delay.subCode || ''}` : '-';
+      // Format multiple delays (with backward compatibility)
+      const delays = getIssueDelays(issue);
+      const delayText = delays.length > 0 ?
+        delays.map(d => `${d.mainCode}-${d.subCode || ''}`).join(', ') : '-';
 
-      const prodText = issue.productivity ?
-        `${issue.productivity.mainCode}-${issue.productivity.subOption || ''}` : '-';
+      // Format multiple productivities (with backward compatibility)
+      const productivities = getIssueProductivities(issue);
+      const prodText = productivities.length > 0 ?
+        productivities.map(p => `${p.mainCode}-${p.subOption || ''}`).join(', ') : '-';
 
       return [
         index + 1,
@@ -6681,11 +7131,15 @@ async function exportMatchFactorToPDF(excavatorId, matchFactorData, issuesData) 
 
     const issueHeaders = [['No', 'Waktu', 'Delay Problem', 'Productivity Problem', 'Catatan', 'Foto']];
     const issueTableData = issuesData.map((issue, index) => {
-      const delayText = issue.delay ?
-        `${issue.delay.mainCode}-${issue.delay.subCode || ''}` : '-';
+      // Format multiple delays (with backward compatibility)
+      const delays = getIssueDelays(issue);
+      const delayText = delays.length > 0 ?
+        delays.map(d => `${d.mainCode}-${d.subCode || ''}`).join(', ') : '-';
 
-      const prodText = issue.productivity ?
-        `${issue.productivity.mainCode}-${issue.productivity.subOption || ''}` : '-';
+      // Format multiple productivities (with backward compatibility)
+      const productivities = getIssueProductivities(issue);
+      const prodText = productivities.length > 0 ?
+        productivities.map(p => `${p.mainCode}-${p.subOption || ''}`).join(', ') : '-';
 
       return [
         index + 1,

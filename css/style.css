@@ -126,6 +126,20 @@ body {
     animation: fadeIn var(--transition-base) ease-out;
 }
 
+/* Slide down for expandable content */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        max-height: 500px;
+    }
+}
+
 /* Slide in for toasts */
 @keyframes slideIn {
     from { 

@@ -242,7 +242,7 @@
 					<div class="px-2">
 						<div class="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
 							<div class="text-xs text-gray-500 text-center">
-								<span class="font-medium">SmartzProd</span> <span class="text-gray-400">v2.3.0</span>
+								<span class="font-medium">SmartzProd</span> <span class="text-gray-400">v2.4.1</span>
 								<br />
 								<span class="text-gray-400">Made with ❤️</span>
 							</div>
@@ -291,9 +291,9 @@
 								<p class="text-sm text-gray-500">Informasi operator dan equipment</p>
 							</div>
 						</div>
-						<span class="px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-full">Required</span>
+						<span class="px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-full">* Required</span>
 					</div>
-					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
 						<div class="relative">
 							<label for="namaPengawas" class="block text-sm font-semibold text-gray-700 mb-2">
 								<i class="fas fa-user text-indigo-500 mr-1"></i>Nama Pengawas
@@ -384,6 +384,58 @@
 								</div>
 							</div>
 							<p class="mt-1 text-xs text-gray-500" id="noExcavator-help"><i class="fas fa-info-circle mr-1"></i>Format: EX2030, EX2031, dst.</p>
+						</div>
+
+						<div class="relative">
+							<label for="namaOperator" class="block text-sm font-semibold text-gray-700 mb-2">
+								<i class="fas fa-hard-hat text-indigo-500 mr-1"></i>Nama Operator Excavator
+								<span class="text-red-500">*</span>
+							</label>
+							<div class="relative">
+								<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+									<i class="fas fa-user text-gray-400"></i>
+								</div>
+								<input
+									type="text"
+									id="namaOperator"
+									class="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all hover:border-indigo-300 peer"
+									placeholder="Masukkan nama operator"
+									required
+									aria-describedby="namaOperator-help" />
+								<div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+									<i class="fas fa-check-circle text-green-500 hidden" id="namaOperator-valid"></i>
+									<i class="fas fa-exclamation-circle text-red-500 hidden" id="namaOperator-invalid"></i>
+								</div>
+							</div>
+							<p class="mt-1 text-xs text-gray-500" id="namaOperator-help"><i class="fas fa-info-circle mr-1"></i>Nama operator excavator</p>
+						</div>
+
+						<div class="relative">
+							<label for="jenisMaterial" class="block text-sm font-semibold text-gray-700 mb-2">
+								<i class="fas fa-layer-group text-indigo-500 mr-1"></i>Jenis Material
+								<span class="text-red-500">*</span>
+							</label>
+							<div class="relative">
+								<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+									<i class="fas fa-cube text-gray-400"></i>
+								</div>
+								<select
+									id="jenisMaterial"
+									class="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all hover:border-indigo-300 peer bg-white"
+									style="appearance: none; -webkit-appearance: none; -moz-appearance: none; background-image: none; padding-right: 2.5rem"
+									required
+									aria-describedby="jenisMaterial-help">
+									<option value="">Pilih jenis material</option>
+									<option value="Blasting">Blasting</option>
+									<option value="Soil">Soil</option>
+									<option value="Lumpur">Lumpur</option>
+									<option value="Free dig">Free dig</option>
+								</select>
+								<div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+									<i class="fas fa-chevron-down text-gray-400"></i>
+								</div>
+							</div>
+							<p class="mt-1 text-xs text-gray-500" id="jenisMaterial-help"><i class="fas fa-info-circle mr-1"></i>Tipe material yang diangkut</p>
 						</div>
 					</div>
 				</div>
@@ -681,6 +733,8 @@
 											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase tracking-wider border-b-2 border-blue-200">NRP</th>
 											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase tracking-wider border-b-2 border-blue-200">Waktu</th>
 											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase tracking-wider border-b-2 border-blue-200">No Excavator</th>
+											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase tracking-wider border-b-2 border-blue-200">Operator</th>
+											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase tracking-wider border-b-2 border-blue-200">Jenis Material</th>
 											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase tracking-wider border-b-2 border-blue-200">Ritase</th>
 											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase tracking-wider border-b-2 border-blue-200">HM Awal</th>
 											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-blue-900 uppercase tracking-wider border-b-2 border-blue-200">HM Akhir</th>
@@ -741,6 +795,8 @@
 											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-purple-900 uppercase tracking-wider border-b-2 border-purple-200">NRP</th>
 											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-purple-900 uppercase tracking-wider border-b-2 border-purple-200">Waktu</th>
 											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-purple-900 uppercase tracking-wider border-b-2 border-purple-200">No Excavator</th>
+											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-purple-900 uppercase tracking-wider border-b-2 border-purple-200">Operator</th>
+											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-purple-900 uppercase tracking-wider border-b-2 border-purple-200">Jenis Material</th>
 											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-purple-900 uppercase tracking-wider border-b-2 border-purple-200">Jumlah HD</th>
 											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-purple-900 uppercase tracking-wider border-b-2 border-purple-200">CT Hauler (min)</th>
 											<th scope="col" class="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs font-bold text-purple-900 uppercase tracking-wider border-b-2 border-purple-200">CT Loader (min)</th>
@@ -1096,7 +1152,7 @@
 							<i class="fas fa-keyboard mr-1"></i>
 							Tekan <kbd class="px-1.5 py-0.5 bg-gray-200 rounded text-gray-600 font-mono text-[9px] sm:text-xs">ESC</kbd> untuk menutup
 						</p>
-						<p class="text-[10px] sm:text-xs text-gray-400">v2.3.0</p>
+						<p class="text-[10px] sm:text-xs text-gray-400">v2.4.1</p>
 					</div>
 				</div>
 			</div>
@@ -1160,68 +1216,44 @@
 							<span class="text-xs text-red-500 font-semibold">*</span>
 						</div>
 
-						<!-- Main Delay Category -->
-						<div class="mb-4">
-							<label class="block text-sm font-semibold text-gray-700 mb-2"> Pilih Kategori Delay </label>
-							<select id="delayMainCategory" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all text-sm bg-white">
-								<option value="">-- Pilih Kategori --</option>
-							</select>
+						<!-- Dynamic Delay Items Container -->
+						<div id="delayItemsContainer" class="space-y-3 mb-3">
+							<!-- Delay items will be inserted here dynamically -->
 						</div>
 
-						<!-- Sub Delay Category (shown when main category selected) -->
-						<div id="delaySubCategoryContainer" class="hidden mb-4">
-							<label class="block text-sm font-semibold text-gray-700 mb-2"> Pilih Sub-Kategori </label>
-							<select id="delaySubCategory" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all text-sm bg-white">
-								<option value="">-- Pilih Sub-Kategori --</option>
-							</select>
-						</div>
-
-						<!-- Custom Delay Text (shown when "Others" selected) -->
-						<div id="delayCustomTextContainer" class="hidden">
-							<label class="block text-sm font-semibold text-gray-700 mb-2"> Keterangan Detail </label>
-							<textarea
-								id="delayCustomText"
-								rows="3"
-								placeholder="Masukkan keterangan detail..."
-								class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all text-sm resize-none"></textarea>
-						</div>
+						<!-- Add Delay Button -->
+						<button
+							type="button"
+							id="addDelayBtn"
+							class="w-full px-4 py-3 border-2 border-dashed border-red-300 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 font-semibold">
+							<i class="fas fa-plus-circle"></i>
+							<span>Tambah Delay Lain</span>
+						</button>
 					</div>
 
 					<!-- Section 2: Productivity Problem -->
 					<div class="border border-gray-200 rounded-xl p-4 sm:p-5">
 						<div class="flex items-center gap-2 mb-4">
-							<div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-								<span class="text-green-600 font-bold">2</span>
+							<div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+								<span class="text-orange-600 font-bold">2</span>
 							</div>
 							<h3 class="text-base sm:text-lg font-bold text-gray-800">Productivity Problem</h3>
 							<span class="text-xs text-red-500 font-semibold">*</span>
 						</div>
 
-						<!-- Main Productivity Category -->
-						<div class="mb-4">
-							<label class="block text-sm font-semibold text-gray-700 mb-2"> Pilih Kategori Productivity </label>
-							<select id="productivityMainCategory" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all text-sm bg-white">
-								<option value="">-- Pilih Kategori --</option>
-							</select>
+						<!-- Dynamic Productivity Items Container -->
+						<div id="productivityItemsContainer" class="space-y-3 mb-3">
+							<!-- Productivity items will be inserted here dynamically -->
 						</div>
 
-						<!-- Sub Productivity Category (shown when main category selected) -->
-						<div id="productivitySubCategoryContainer" class="hidden mb-4">
-							<label class="block text-sm font-semibold text-gray-700 mb-2"> Pilih Sub-Kategori </label>
-							<select id="productivitySubCategory" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all text-sm bg-white">
-								<option value="">-- Pilih Sub-Kategori --</option>
-							</select>
-						</div>
-
-						<!-- Custom Productivity Text (shown when "Others" selected) -->
-						<div id="productivityCustomTextContainer" class="hidden">
-							<label class="block text-sm font-semibold text-gray-700 mb-2"> Keterangan Detail </label>
-							<textarea
-								id="productivityCustomText"
-								rows="3"
-								placeholder="Masukkan keterangan detail..."
-								class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all text-sm resize-none"></textarea>
-						</div>
+						<!-- Add Productivity Button -->
+						<button
+							type="button"
+							id="addProductivityBtn"
+							class="w-full px-4 py-3 border-2 border-dashed border-orange-300 bg-orange-50 hover:bg-orange-100 text-orange-600 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 font-semibold">
+							<i class="fas fa-plus-circle"></i>
+							<span>Tambah Productivity Lain</span>
+						</button>
 					</div>
 
 					<!-- Section 3: Dokumentasi Masalah (Photo Upload + Notes) -->
