@@ -6280,14 +6280,14 @@ async function sharePDFToWhatsApp(type) {
     const pengawasList = [...new Set(data.map(d => d.namaPengawas))];
 
     let summaryText = `📊 *${title}*\n`;
-    summaryText += `📅 ${formattedDate}\n`;
+    summaryText += `📅 _${formattedDate}_\n`;
     summaryText += `━━━━━━━━━━━━━━━━━━━━\n\n`;
 
     // Pengawas Information
-    summaryText += `👤 *Pengawas:*\n`;
+    summaryText += `👤 *PENGAWAS*\n`;
     const uniquePengawas = [...new Set(data.map(d => `${d.namaPengawas} (NRP: ${d.nrp})`))];
     uniquePengawas.forEach(pengawas => {
-      summaryText += `• ${pengawas}\n`;
+      summaryText += `   • ${pengawas}\n`;
     });
     summaryText += `\n`;
 
@@ -6300,19 +6300,20 @@ async function sharePDFToWhatsApp(type) {
       const minProductivity = Math.min(...productivityValues).toFixed(2);
       const totalRitase = data.reduce((sum, d) => sum + d.jumlahRitase, 0);
 
-      summaryText += `📈 *Ringkasan Data:*\n`;
-      summaryText += `• Total Records: ${totalRecords}\n`;
-      summaryText += `• Jumlah Excavator: ${excavatorList.length}\n`;
-      summaryText += `• Pengawas: ${pengawasList.length}\n\n`;
+      summaryText += `📈 *RINGKASAN DATA*\n`;
+      summaryText += `   • Total Records: *${totalRecords}*\n`;
+      summaryText += `   • Jumlah Excavator: *${excavatorList.length}*\n`;
+      summaryText += `   • Pengawas: *${pengawasList.length}*\n\n`;
 
-      summaryText += `⚙️ *Productivity:*\n`;
-      summaryText += `• Rata-rata: ${avgProductivity} BCM/Jam\n`;
-      summaryText += `• Tertinggi: ${maxProductivity} BCM/Jam\n`;
-      summaryText += `• Terendah: ${minProductivity} BCM/Jam\n`;
-      summaryText += `• Total Ritase: ${totalRitase}\n\n`;
+      summaryText += `⚙️ *PRODUCTIVITY*\n`;
+      summaryText += `   • Rata-rata: *${avgProductivity}* BCM/Jam\n`;
+      summaryText += `   • Tertinggi: *${maxProductivity}* BCM/Jam\n`;
+      summaryText += `   • Terendah: *${minProductivity}* BCM/Jam\n`;
+      summaryText += `   • Total Ritase: *${totalRitase}*\n\n`;
 
       // Detailed Excavator breakdown with problems
-      summaryText += `🚜 *Detail Per Excavator:*\n\n`;
+      summaryText += `━━━━━━━━━━━━━━━━━━━━\n`;
+      summaryText += `🚜 *DETAIL PER EXCAVATOR*\n\n`;
       excavatorList.forEach(exc => {
         const excData = data.filter(d => d.noExcavator === exc).sort((a, b) => {
           return new Date(a.waktu) - new Date(b.waktu);
@@ -6322,8 +6323,8 @@ async function sharePDFToWhatsApp(type) {
         // Get pengawas name for this excavator (use first record's pengawas)
         const pengawasName = excData[0]?.namaPengawas || '';
 
-        summaryText += `*${exc}* | (Pengawas: ${pengawasName})\n`;
-        summaryText += `Rata-rata: ${excAvg} BCM/Jam\n\n`;
+        summaryText += `*${exc}*  |  _Pengawas: ${pengawasName}_\n`;
+        summaryText += `Rata-rata: *${excAvg} BCM/Jam*\n\n`;
 
         excData.forEach((record, idx) => {
           const time = new Date(record.waktu);
@@ -6333,14 +6334,12 @@ async function sharePDFToWhatsApp(type) {
           const delay = Math.max(0, (whTarget - selisihHM) * 60);
           const wh = selisihHM * 60;
 
-          summaryText += `${String.fromCharCode(65 + idx)}. Jam ${timeStr} (${record.productivity} BCM/Jam)\n`;
-          summaryText += `   • Operator: ${record.namaOperator || '-'}\n`;
-          summaryText += `   • Jenis Material: ${record.jenisMaterial || '-'}\n`;
-          summaryText += `   • Ritase: ${record.jumlahRitase}\n`;
-          summaryText += `   • HM Awal: ${record.hmAwal}\n`;
-          summaryText += `   • HM Akhir: ${record.hmAkhir}\n`;
-          summaryText += `   • WH (Menit): ${wh.toFixed(2)}\n`;
-          summaryText += `   • Delay (Menit): ${delay.toFixed(2)}\n`;
+          summaryText += `  *${String.fromCharCode(65 + idx)}. Jam ${timeStr}*  →  *${record.productivity} BCM/Jam*\n`;
+          summaryText += `     👤 Operator: _${record.namaOperator || '-'}_\n`;
+          summaryText += `     🪨 Material: ${record.jenisMaterial || '-'}\n`;
+          summaryText += `     🔄 Ritase: *${record.jumlahRitase}*\n`;
+          summaryText += `     ⏱️ HM Awal: ${record.hmAwal}  |  HM Akhir: ${record.hmAkhir}\n`;
+          summaryText += `     ⚙️ WH: *${wh.toFixed(2)}* menit  |  Delay: *${delay.toFixed(2)}* menit\n`;
 
           // Find related issues for this excavator
           const relatedIssues = AppState.issuesData.filter(issue => {
@@ -6395,17 +6394,17 @@ async function sharePDFToWhatsApp(type) {
 
             // Format Delay Problems
             if (uniqueDelayProblems.length > 0) {
-              summaryText += `   • Problem Delay:\n`;
+              summaryText += `     ⚠️ *Problem Delay:*\n`;
               uniqueDelayProblems.forEach(problem => {
-                summaryText += `     ~ ${problem}\n`;
+                summaryText += `        ▸ ${problem}\n`;
               });
             }
 
             // Format Productivity Problems
             if (uniqueProdProblems.length > 0) {
-              summaryText += `   • Problem Productivity:\n`;
+              summaryText += `     ⚠️ *Problem Productivity:*\n`;
               uniqueProdProblems.forEach(problem => {
-                summaryText += `     ~ ${problem}\n`;
+                summaryText += `        ▸ ${problem}\n`;
               });
             }
           }
@@ -6420,28 +6419,29 @@ async function sharePDFToWhatsApp(type) {
       const maxMF = Math.max(...mfValues).toFixed(2);
       const minMF = Math.min(...mfValues).toFixed(2);
 
-      summaryText += `📈 *Ringkasan Data:*\n`;
-      summaryText += `• Total Records: ${totalRecords}\n`;
-      summaryText += `• Jumlah Excavator: ${excavatorList.length}\n`;
-      summaryText += `• Pengawas: ${pengawasList.length}\n\n`;
+      summaryText += `📈 *RINGKASAN DATA*\n`;
+      summaryText += `   • Total Records: *${totalRecords}*\n`;
+      summaryText += `   • Jumlah Excavator: *${excavatorList.length}*\n`;
+      summaryText += `   • Pengawas: *${pengawasList.length}*\n\n`;
 
-      summaryText += `⚖️ *Match Factor:*\n`;
-      summaryText += `• Rata-rata: ${avgMF}\n`;
-      summaryText += `• Tertinggi: ${maxMF}\n`;
-      summaryText += `• Terendah: ${minMF}\n`;
+      summaryText += `⚖️ *MATCH FACTOR*\n`;
+      summaryText += `   • Rata-rata: *${avgMF}*\n`;
+      summaryText += `   • Tertinggi: *${maxMF}*\n`;
+      summaryText += `   • Terendah: *${minMF}*\n`;
 
       // Status indication
       const avgNum = parseFloat(avgMF);
       if (avgNum >= 0.9 && avgNum <= 1.1) {
-        summaryText += `• Status: ✅ Optimal (0.9-1.1)\n\n`;
+        summaryText += `   • Status: ✅ *Optimal* _(0.9-1.1)_\n\n`;
       } else if (avgNum < 0.9) {
-        summaryText += `• Status: ⚠️ Under Match (<0.9)\n\n`;
+        summaryText += `   • Status: ⚠️ *Under Match* _(<0.9)_\n\n`;
       } else {
-        summaryText += `• Status: ⚠️ Over Match (>1.1)\n\n`;
+        summaryText += `   • Status: ⚠️ *Over Match* _(>1.1)_\n\n`;
       }
 
       // Detailed Excavator breakdown with problems
-      summaryText += `🚜 *Detail Per Excavator:*\n\n`;
+      summaryText += `━━━━━━━━━━━━━━━━━━━━\n`;
+      summaryText += `🚜 *DETAIL PER EXCAVATOR*\n\n`;
       excavatorList.forEach(exc => {
         const excData = data.filter(d => d.noExcavator === exc).sort((a, b) => {
           return new Date(a.waktu) - new Date(b.waktu);
@@ -6451,19 +6451,18 @@ async function sharePDFToWhatsApp(type) {
         // Get pengawas name for this excavator (use first record's pengawas)
         const pengawasName = excData[0]?.namaPengawas || '';
 
-        summaryText += `*${exc}* | (Pengawas: ${pengawasName})\n`;
-        summaryText += `Rata-rata: ${excAvg}\n\n`;
+        summaryText += `*${exc}*  |  _Pengawas: ${pengawasName}_\n`;
+        summaryText += `Rata-rata MF: *${excAvg}*\n\n`;
 
         excData.forEach((record, idx) => {
           const time = new Date(record.waktu);
           const timeStr = time.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false });
 
-          summaryText += `${String.fromCharCode(65 + idx)}. Jam ${timeStr} (MF: ${record.matchFactor})\n`;
-          summaryText += `   • Operator: ${record.namaOperator || '-'}\n`;
-          summaryText += `   • Jenis Material: ${record.jenisMaterial || '-'}\n`;
-          summaryText += `   • Jumlah HD: ${record.jumlahHD}\n`;
-          summaryText += `   • CT Hauler: ${record.cycleTimeHauler} min\n`;
-          summaryText += `   • CT Loader: ${record.cycleTimeLoader} min\n`;
+          summaryText += `  *${String.fromCharCode(65 + idx)}. Jam ${timeStr}*  →  *MF: ${record.matchFactor}*\n`;
+          summaryText += `     👤 Operator: _${record.namaOperator || '-'}_\n`;
+          summaryText += `     🪨 Material: ${record.jenisMaterial || '-'}\n`;
+          summaryText += `     🚚 Jumlah HD: *${record.jumlahHD}*\n`;
+          summaryText += `     ⏱️ CT Hauler: *${record.cycleTimeHauler}* min  |  CT Loader: *${record.cycleTimeLoader}* min\n`;
 
           // Find related issues for this excavator
           const relatedIssues = AppState.issuesData.filter(issue => {
@@ -6518,17 +6517,17 @@ async function sharePDFToWhatsApp(type) {
 
             // Format Delay Problems
             if (uniqueDelayProblems.length > 0) {
-              summaryText += `   • Problem Delay:\n`;
+              summaryText += `     ⚠️ *Problem Delay:*\n`;
               uniqueDelayProblems.forEach(problem => {
-                summaryText += `     ~ ${problem}\n`;
+                summaryText += `        ▸ ${problem}\n`;
               });
             }
 
             // Format Productivity Problems
             if (uniqueProdProblems.length > 0) {
-              summaryText += `   • Problem Productivity:\n`;
+              summaryText += `     ⚠️ *Problem Productivity:*\n`;
               uniqueProdProblems.forEach(problem => {
-                summaryText += `     ~ ${problem}\n`;
+                summaryText += `        ▸ ${problem}\n`;
               });
             }
           }
@@ -6548,7 +6547,7 @@ async function sharePDFToWhatsApp(type) {
     }
 
     summaryText += `\n━━━━━━━━━━━━━━━━━━━━\n`;
-    summaryText += `📱 SmartzProd - Mining Productivity Tracker`;
+    summaryText += `📱 _SmartzProd - Mining Productivity Tracker_`;
 
     // Copy summary text to clipboard FIRST (before any share attempt)
     // This ensures caption is available regardless of share outcome
