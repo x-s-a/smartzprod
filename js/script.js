@@ -391,6 +391,47 @@ class ImageStorage {
 const imageStorage = new ImageStorage();
 
 // ==========================================
+// Platform Detection Utilities
+// ==========================================
+/**
+ * PlatformDetector - Detects device platform for optimized sharing
+ */
+class PlatformDetector {
+  /**
+   * Detects if the current device is a mobile device
+   * @returns {boolean} True if mobile device
+   */
+  static isMobileDevice() {
+    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+
+    // Check for mobile patterns in user agent
+    const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i;
+
+    // Also check for touch capability and screen size
+    const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const isSmallScreen = window.innerWidth <= 768;
+
+    return mobileRegex.test(userAgent) || (hasTouchScreen && isSmallScreen);
+  }
+
+  /**
+   * Detects if the current platform is desktop
+   * @returns {boolean} True if desktop
+   */
+  static isDesktop() {
+    return !this.isMobileDevice();
+  }
+
+  /**
+   * Gets the platform type
+   * @returns {string} 'mobile' or 'desktop'
+   */
+  static getPlatformType() {
+    return this.isMobileDevice() ? 'mobile' : 'desktop';
+  }
+}
+
+// ==========================================
 // Issue Options Data Structure
 // ==========================================
 const DELAY_OPTIONS = {
@@ -5721,7 +5762,36 @@ async function exportToPDF(type) {
 }
 
 // ==========================================
-// Share PDF via Web Share API (Same as Export PDF)
+// WhatsApp Integration Helper
+// ==========================================
+/**
+ * Opens WhatsApp (Desktop app or Web) with pre-filled caption
+ * @param {string} caption - The message to pre-fill in WhatsApp
+ */
+function openWhatsAppWithCaption(caption) {
+  const encodedCaption = encodeURIComponent(caption);
+
+  // Try to open WhatsApp Desktop app first
+  const whatsappDesktopUrl = `whatsapp://send?text=${encodedCaption}`;
+  const whatsappWebUrl = `https://web.whatsapp.com/send?text=${encodedCaption}`;
+
+  // Attempt to open desktop app
+  const desktopWindow = window.open(whatsappDesktopUrl, '_blank');
+
+  // Fallback to WhatsApp Web after a short delay if desktop app doesn't respond
+  setTimeout(() => {
+    // If desktop app didn't open (window is null or closed immediately), open web version
+    if (!desktopWindow || desktopWindow.closed) {
+      window.open(whatsappWebUrl, '_blank');
+      console.log('Opened WhatsApp Web (desktop app not detected)');
+    } else {
+      console.log('Opened WhatsApp Desktop app');
+    }
+  }, 1000);
+}
+
+// ==========================================
+// Share PDF via Web Share API (Platform-aware)
 // ==========================================
 async function sharePDFToWhatsApp(type) {
   const data = type === 'productivity' ? AppState.productivityData : AppState.matchFactorData;
@@ -6492,40 +6562,63 @@ async function sharePDFToWhatsApp(type) {
       console.warn('Could not copy to clipboard:', clipboardError);
     }
 
-    // Attempt to share using Web Share API with graceful fallback
-    if (webShareSupported && canShareFiles(pdfFile)) {
-      // Browser supports file sharing - use Web Share API
-      try {
-        await navigator.share({
-          files: [pdfFile]
-        });
+    // Platform-specific sharing strategy
+    const isDesktop = PlatformDetector.isDesktop();
 
-        if (clipboardSuccess) {
-          showAlert('PDF berhasil dibagikan! Caption sudah disalin ke clipboard.', 'success');
-        } else {
-          showAlert('PDF berhasil dibagikan!', 'success');
-        }
-      } catch (shareError) {
-        if (shareError.name === 'AbortError') {
-          showAlert('Pembagian dibatalkan', 'info');
-        } else {
-          // Share failed - fallback to download
-          console.warn('Share failed, falling back to download:', shareError);
-          doc.save(fileName);
+    if (isDesktop) {
+      // DESKTOP FLOW: Download PDF + Open WhatsApp with caption
+      console.log('Desktop detected: Downloading PDF and opening WhatsApp');
+
+      // Download the PDF
+      doc.save(fileName);
+
+      // Open WhatsApp (Desktop app or Web) with caption
+      openWhatsAppWithCaption(summaryText);
+
+      // Show user-friendly message
+      showAlert(
+        '📥 PDF downloaded! 💬 WhatsApp is opening with your caption ready. Just attach the PDF file.',
+        'success'
+      );
+
+    } else {
+      // MOBILE FLOW: Use Web Share API (better UX on mobile)
+      console.log('Mobile detected: Using Web Share API');
+
+      if (webShareSupported && canShareFiles(pdfFile)) {
+        // Browser supports file sharing - use Web Share API
+        try {
+          await navigator.share({
+            files: [pdfFile]
+          });
+
           if (clipboardSuccess) {
-            showAlert('Caption disalin ke clipboard! PDF diunduh karena sharing gagal.', 'success');
+            showAlert('PDF berhasil dibagikan! Caption sudah disalin ke clipboard.', 'success');
           } else {
-            showAlert('PDF berhasil diunduh.', 'success');
+            showAlert('PDF berhasil dibagikan!', 'success');
+          }
+        } catch (shareError) {
+          if (shareError.name === 'AbortError') {
+            showAlert('Pembagian dibatalkan', 'info');
+          } else {
+            // Share failed - fallback to download
+            console.warn('Share failed, falling back to download:', shareError);
+            doc.save(fileName);
+            if (clipboardSuccess) {
+              showAlert('Caption disalin ke clipboard! PDF diunduh karena sharing gagal.', 'success');
+            } else {
+              showAlert('PDF berhasil diunduh.', 'success');
+            }
           }
         }
-      }
-    } else {
-      // Browser doesn't support file sharing - fallback to download
-      doc.save(fileName);
-      if (clipboardSuccess) {
-        showAlert('Caption disalin ke clipboard! PDF diunduh (browser tidak mendukung share file).', 'success');
       } else {
-        showAlert('PDF berhasil diunduh.', 'success');
+        // Browser doesn't support file sharing - fallback to download
+        doc.save(fileName);
+        if (clipboardSuccess) {
+          showAlert('Caption disalin ke clipboard! PDF diunduh (browser tidak mendukung share file).', 'success');
+        } else {
+          showAlert('PDF berhasil diunduh.', 'success');
+        }
       }
     }
   } catch (error) {
